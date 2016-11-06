@@ -18,7 +18,7 @@ Read about it online.
 import os
 from sqlalchemy import *
 from sqlalchemy.pool import NullPool
-from flask import Flask, request, render_template, g, redirect, Response
+from flask import Flask, session, url_for, request, render_template, g, redirect, Response
 
 tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
@@ -38,7 +38,8 @@ app = Flask(__name__, template_folder=tmpl_dir)
 #     DATABASEURI = "postgresql://ewu2493:foobar@<IP_OF_POSTGRE_SQL_SERVER>/postgres"
 #
 # Swap out the URI below with the URI for the database created in part 2
-DATABASEURI = "sqlite:///test.db"
+DATABASEURI = "postgresql://qv2106:d642r@104.196.175.120/postgres"
+#DATABASEURI = "sqlite:///test.db"
 
 
 #
@@ -62,12 +63,13 @@ engine = create_engine(DATABASEURI)
 # 
 # The setup code should be deleted once you switch to using the Part 2 postgresql database
 #
-engine.execute("""DROP TABLE IF EXISTS test;""")
-engine.execute("""CREATE TABLE IF NOT EXISTS test (
-  id serial,
-  name text
-);""")
-engine.execute("""INSERT INTO test(name) VALUES ('grace hopper'), ('alan turing'), ('ada lovelace');""")
+#engine.execute("""DROP TABLE IF EXISTS test;""")
+#engine.execute("""CREATE TABLE IF NOT EXISTS test (
+#  id serial,
+#  name text
+#);""")
+#engine.execute("""INSERT INTO test(name) VALUES ('grace hopper');""")
+#engine.execute("""SELECT * FROM Subscription;""")
 #
 # END SQLITE SETUP CODE
 #
@@ -101,6 +103,52 @@ def teardown_request(exception):
   except Exception as e:
     pass
 
+@app.route('/')
+def index():
+    print request.args
+    return redirect(url_for('login'))
+
+def valid_login(username):
+    cmd = 'SELECT uid FROM Users where name=:name1'
+    cursor = g.conn.execute(text(cmd), name1=username);
+    for result in cursor:
+        print result
+        cursor.close()
+        print 'logging in'
+        return true
+    cursor.close()
+    print 'wrong login'
+    return false
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    print request.args
+    if request.method == 'POST':
+        if valid_login(request.form['username'])==true:
+            print 'valid session for ', request.form['username']
+            session['username'] = request.form['username']
+            print session['username']
+            return redirect(url_for('profile', username=session['username']))
+        else:
+            error = 'Invalid username'
+            print error
+            return render_template('login.html', error = error)
+    else:
+        return render_template('login.html')
+
+@app.route('/user/<username>')
+def profile(username):
+    return render_template('user.html', name=username)
+
+@app.route('/logout', methods=['POST'])
+def logout():
+    print "logging out"
+    session.pop('username', None)
+    print "redirecting to login page"
+    return redirect(url_for('login'))
+
+app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
+
 
 #
 # @app.route is a decorator around index() that means:
@@ -115,30 +163,30 @@ def teardown_request(exception):
 # see for routing: http://flask.pocoo.org/docs/0.10/quickstart/#routing
 # see for decorators: http://simeonfranklin.com/blog/2012/jul/1/python-decorators-in-12-steps/
 #
-@app.route('/')
-def index():
-  """
-  request is a special object that Flask provides to access web request information:
-
-  request.method:   "GET" or "POST"
-  request.form:     if the browser submitted a form, this contains the data in the form
-  request.args:     dictionary of URL arguments e.g., {a:1, b:2} for http://localhost?a=1&b=2
-
-  See its API: http://flask.pocoo.org/docs/0.10/api/#incoming-request-data
-  """
+#@app.route('/')
+#def index():
+#  """
+#  request is a special object that Flask provides to access web request information:
+#
+#  request.method:   "GET" or "POST"
+#  request.form:     if the browser submitted a form, this contains the data in the form
+#  request.args:     dictionary of URL arguments e.g., {a:1, b:2} for http://localhost?a=1&b=2
+#
+#  See its API: http://flask.pocoo.org/docs/0.10/api/#incoming-request-data
+#  """
 
   # DEBUG: this is debugging code to see what request looks like
-  print request.args
+#  print request.args
 
 
   #
   # example of a database query
   #
-  cursor = g.conn.execute("SELECT name FROM test")
-  names = []
-  for result in cursor:
-    names.append(result['name'])  # can also be accessed using result[0]
-  cursor.close()
+  #cursor = g.conn.execute("SELECT name FROM test")
+  #names = []
+  #for result in cursor:
+  #  names.append(result['name'])  # can also be accessed using result[0]
+  #cursor.close()
 
   #
   # Flask uses Jinja templates, which is an extension to HTML where you can
@@ -166,14 +214,14 @@ def index():
   #     <div>{{n}}</div>
   #     {% endfor %}
   #
-  context = dict(data = names)
+  #context = dict(data = names)
 
 
   #
   # render_template looks in the templates/ folder for files.
   # for example, the below file reads template/index.html
   #
-  return render_template("index.html", **context)
+  #return render_template("index.html", **context)
 
 #
 # This is an example of a different path.  You can see it at
@@ -183,25 +231,25 @@ def index():
 # notice that the functio name is another() rather than index()
 # the functions for each app.route needs to have different names
 #
-@app.route('/another')
-def another():
-  return render_template("anotherfile.html")
+#@app.route('/another')
+#def another():
+#  return render_template("anotherfile.html")
 
 
 # Example of adding new data to the database
-@app.route('/add', methods=['POST'])
-def add():
-  name = request.form['name']
-  print name
-  cmd = 'INSERT INTO test(name) VALUES (:name1), (:name2)';
-  g.conn.execute(text(cmd), name1 = name, name2 = name);
-  return redirect('/')
+#@app.route('/add', methods=['POST'])
+#def add():
+#  name = request.form['name']
+#  print name
+#  cmd = 'INSERT INTO test(name) VALUES (:name1), (:name2)';
+#  g.conn.execute(text(cmd), name1 = name, name2 = name);
+#  return redirect('/')
 
 
-@app.route('/login')
-def login():
-    abort(401)
-    this_is_never_executed()
+#@app.route('/login')
+#def login():
+#    abort(401)
+#    this_is_never_executed()
 
 
 if __name__ == "__main__":
