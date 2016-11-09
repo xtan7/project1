@@ -122,7 +122,7 @@ def add_user(username, name, dob):
         return False
     return True
 
-@app.route('/user/<username>/music')
+@app.route('/user/<username>/music', methods=["POST"])
 def music(username):
     # Find uid
     cmd = "SELECT uid FROM users WHERE users.username=%s"
