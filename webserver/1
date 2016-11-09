@@ -103,127 +103,34 @@ def teardown_request(exception):
   except Exception as e:
     pass
 
-#LOGIN VALIDATIONS
-######################################
-def is_valid_username(username):
-    isAlphaNum = username.isalnum()
-    print "username", username, " isalphanum:", isAlphaNum 
-    return isAlphaNum 
-
-def add_user(username, name, dob):
-    cmd = 'INSERT INTO Users (uid, since, name, dob, username) VALUES(DEFAULT, now(), :name1, :dob1, :username1)'
-    try:
-        result = g.conn.execute(text(cmd), name1=name, dob1=dob, username1=username)
-        print "result of insert", result
-        #print result.is_insert
-        #print result.inserted_primary_key
-    except:
-        print "exception while inserting ", username, name, dob
-        return False
-    return True
-
-def valid_login(username):
-    cmd = 'SELECT uid FROM Users where name=:name1'
-    cursor = g.conn.execute(text(cmd), name1=username)
-    for result in cursor:
-        print result
-        #print result.rowcount
-        cursor.close()
-        print 'logging in'
-        return True
-    cursor.close()
-    print 'wrong login'
-    return False
-
-def username_exists(username):
-    cmd = 'SELECT uid FROM Users where username=:username1'
-    cursor = g.conn.execute(text(cmd), username1=username)
-    for result in cursor:
-        print result
-        #print result.rowcount
-        cursor.close()
-        print 'duplicate username', username
-        return True
-    cursor.close()
-    print 'username doesnt exist', username
-    return False
-
-
-#AFTER LOGIN - user session username
-########################################
-def get_stations_for_user():
-    username = session['username']
-    cmd = 'SELECT create_station.stationid, create_station.name, create_station.theme FROM create_station, Users WHERE Users.username=:username1 AND Users.uid=create_station.uid'
-    cursor = g.conn.execute(text(cmd), username1=username)
-    user_stations = {}
-    for result in cursor:
-        print result
-        for i in result:
-            print i
-        print "result0", result[0]
-        print "result1", result[1]
-        user_stations[result[0]] = [result[1], result[2]]
-    cursor.close()
-    return user_stations
-
-def get_song_favs_for_user():
-    username = session['username']
-    cmd = 'SELECT song.songid, song.title, song.genre, album_release.title, artist.stagename FROM song, album_release, artist, song_favorites, Users WHERE Users.username=:username1 AND Users.uid=song_favorites.uid AND song.songid=song_favorites.songid AND album_release.albumid=song.albumid AND song.uid=artist.uid'
-    cursor = g.conn.execute(text(cmd), username1=username)
-    user_song_favs = {}
-    for result in cursor:
-        print result
-        user_song_favs[result[0]] = {'title':result[1], 'genre':result[2], 'album':result[3], 'artist':result[4]}
-    cursor.close()
-    return user_song_favs
-
-def get_friends():
-    username = session['username']
-    cmd = 'SELECT friend.uid1, friend.uid2, friend.isfriend, Users1.name, Users2.name FROM friend, Users AS Users1, Users AS Users2 WHERE friend.uid1=Users1.uid AND friend.uid2=Users2.uid AND (Users1.username=:username1 OR Users2.username=:username1)'
-    cursor = g.conn.execute(text(cmd), username1=username)
-    friends = {}
-    for result in cursor:
-        print result
-        if result[0]==username:
-            friends[result[1]] = {'name':result[4], 'isfriend':result[2]}
-        else: 
-            friends[result[0]] = {'name':result[3], 'isfriend':result[2]}
-    cursor.close()
-    return friends
-
-def get_name_from_username():
-    username = session['username']
-    cmd = 'SELECT name FROM Users where username=:username1'
-    cursor = g.conn.execute(text(cmd), username1=username)
-    for result in cursor:  
-        name = result[0]
-        cursor.close()
-        return name
-
-def get_subs():
-    username = session['username']
-    cmd = 'SELECT artist.stagename, artist.uid FROM artist, subscription, Users WHERE subscription.uid1=Users.uid AND Users.username=:username1 AND subscription.uid2=artist.uid'
-    cursor = g.conn.execute(text(cmd), username1=username)
-    subs = {}
-    for result in cursor:
-        print result
-        subs[result[1]] = {'stagename':result[0]}
-    cursor.close();
-    return subs
-
-
-#ROUTE FUNCTIONS
-###############################################
 @app.route('/')
 def index():
     print request.args
     return redirect(url_for('login'))
 
+def valid_login(username):
+    cmd = 'SELECT uid FROM Users where name=:name1'
+    cursor = g.conn.execute(text(cmd), name1=username);
+    for result in cursor:
+        print result
+        cursor.close()
+        print 'logging in'
+        return true
+    cursor.close()
+    print 'wrong login'
+    return false
+
+def is_valid_username(username):
+    return username.isalnum()
+
+def add_user(username, name, dob):
+    cmd = 'INSERT INTO Users (uid, since, name, dob, username) VALUES(:uid1, :since1, :name1, :dob1, :username1)'
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     print request.args
     if request.method == 'POST':
-        if valid_login(request.form['username'])==True:
+        if valid_login(request.form['username'])==true:
             print 'valid session for ', request.form['username']
             session['username'] = request.form['username']
             print session['username']
@@ -237,14 +144,7 @@ def login():
 
 @app.route('/user/<username>')
 def profile(username):
-    name = get_name_from_username()
-    stations = get_stations_for_user()
-    favs = get_song_favs_for_user()
-    friends = get_friends()
-    subs = get_subs()
-    for n in stations:
-        print n
-    return render_template('user.html', name=name, username=username, stations=stations, favs=favs, friends=friends, subs=subs)
+    return render_template('user.html', name=username)
 
 @app.route('/logout', methods=['POST'])
 def logout():
@@ -258,32 +158,23 @@ def signup():
     print "signing up"
     print request.args
     if request.method == 'POST':
-        print "here POST"
         username = request.form['username']
         name = request.form['name']
-        dob = request.form['dob']
-        print "username", username
-        print "name", name
-        if is_valid_username(username)==True:
+        if is_valid_username(username)==true:
             print "valid username:", username
-            if username_exists(username) == True:
-                error = "Duplicate username. Please select another name."
-                print error
-                return render_template('signup.html', error =error)
-            if add_user(username, name, dob)==True:
-                session['username'] = username
+            if add_user(username, name)==true:
+                session['username'] = username;
                 print session['username']
                 return redirect(url_for('profile', username=session['username']))
             else:
-                error = "Please enter a valid date"
+                error = "Duplicate username. Please select another name."
                 print error
-                return render_template('signup.html', error =error)
+                render_template('signup.html', error =error)
         else:
             error = 'Invalid username. Please use alphanumeric characters only.'
             print error
-            return render_template('signup.html', error = error)
+            render_template('signup.html', error = error)
     else:
-        print "here GET"
         return render_template('signup.html')
 
 app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'

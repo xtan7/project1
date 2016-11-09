@@ -25,6 +25,11 @@
 <form method="POST" action="/logout">
 <p><input type="submit" value="Log Out"></p>
 </form>
+<table style="width:25%">
+  {% for key, value in stations.iteritems() %}
+  <tr><td>{{value[0]}}</td><td>{{value[1]}}</td><td>"hi"</td></tr>
+  {% endfor %}
+</table>
 
 </body>
 

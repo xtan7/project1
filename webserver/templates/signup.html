@@ -19,12 +19,12 @@
 -->
 <!--<p><a href="/another">Go to the other page</a></p>-->
 
-<form method="POST" action="/login">
-<p>Username:<input type="text" name="username"> <input type="submit" value="Login"></p>
-<p><font color="red">{{error}}</font></p>
-</form>
-<form method="GET" action="/signup">
+<form method="POST" action="/signup">
+<p>Username:<input type="text" name="username"></p>
+<p>Name:<input type="text" name="name"></p>
+<p>Birthday:<input type="date" name="dob"></p>
 <p><input type="submit" value="Sign Up"></p>
+<p><font color="red">{{error}}</font></p>
 </form>
 
 </body>
