@@ -108,6 +108,102 @@ def index():
     print request.args
     return redirect(url_for('login'))
 
+@app.route('/user/<username>/music')
+def music(username):
+    # Find uid
+    cmd = "SELECT uid FROM users WHERE users.username=%s"
+    cursor = g.conn.execute(cmd, username)
+    result = cursor.first()
+    uid = result[0]
+
+    cursor = g.conn.execute("SELECT stagename FROM artist ORDER BY stagename LIMIT 10")
+    artists = []
+    for result in cursor:
+        artists.append(result[0])  # can also be accessed using result[0]
+    cursor.close()
+
+    cursor = g.conn.execute("select song.title, count(song.songid) AS playCount from song, listen WHERE song.songid=listen.songid AND listen.time>(NOW()-interval '6 month') GROUP BY song.songid ORDER BY playCount DESC LIMIT 10")
+    songs = []
+    for result in cursor:
+        songs.append(result[0])  # can also be accessed using result[0]
+    cursor.close()
+
+    cursor = g.conn.execute("(SELECT distinct(genre) FROM song ORDER BY GENRE LIMIT 5) UNION (SELECT distinct(genre) FROM album_release ORDER BY GENRE LIMIT 5)")
+    genres = []
+    for result in cursor:
+        genres.append(result[0])  # can also be accessed using result[0]
+    cursor.close()
+
+    cursor = g.conn.execute("SELECT title FROM album_release ORDER BY title LIMIT 10")
+    albums = []
+    for result in cursor:
+        albums.append(result[0])  # can also be accessed using result[0]
+    cursor.close()
+
+    cmd = "SELECT S.name FROM create_station AS S WHERE S.uid=%s LIMIT 10"
+    cursor = g.conn.execute(cmd, uid)
+    stations = []
+    for result in cursor:
+        stations.append(result[0])  # can also be accessed using result[0]
+    cursor.close()
+
+    cmd = "SELECT DISTINCT S.title, MAX(L.time) FROM song AS S, listen AS L WHERE L.uid=%s and S.songid=L.songid GROUP BY S.title ORDER BY MAX(L.time) DESC LIMIT 10"
+    cursor = g.conn.execute(cmd, uid)
+    played = []
+    for result in cursor:
+        played.append(result[0])  # can also be accessed using result[0]
+    cursor.close()
+
+    context = dict(name = username)
+    context['artists'] = artists
+    context['songs'] = songs
+    context['genres'] = genres
+    context['albums'] = albums
+    context['stations'] = stations
+    context['played'] = played
+
+    return render_template('music.html', **context)
+
+@app.route('/user/<username>/create_station', methods=['GET', 'POST'])
+def creation_station(username):
+    if request.method == 'POST':
+        stationName = request.form['stationName']
+        if stationName == '':
+            error = 'Please enter a station name'
+            return render_template('create_station.html', name=username, error=error)
+        else:
+            theme = request.form['theme']
+            cmd = "SELECT count(*) FROM create_station AS S, users as U WHERE U.username=%s and S.uid=U.uid"
+            cursor = g.conn.execute(cmd, username)
+            result = cursor.first()
+            stationid = int(result[0]) + 1
+
+            cmd = "SELECT uid FROM users WHERE users.username=%s"
+            cursor = g.conn.execute(cmd, username)
+            result = cursor.first()
+            uid = result[0]
+            
+            cmd = "INSERT INTO create_station VALUES(now(), %s, %s, %s, %s)"
+            cursor = g.conn.execute(cmd, uid, stationid, stationName, theme)
+
+            message = "New Station '" + stationName + "' Created!"
+            return render_template('create_station.html', name=username, message=message)
+    else:
+        return render_template('create_station.html', name=username)
+
+@app.route('/user/<username>/search/<query>')
+def search(username, query):
+    cmd = "SELECT stagename FROM artist WHERE stagename ILIKE " + "'%" + "%s" + "%'" 
+    cursor = g.conn.execute(cmd, query)
+    songResults = []
+    for result in cursor:
+        songResults.append(result[0])  # can also be accessed using result[0]
+    cursor.close()
+
+    context = dict(songResults = songResults)
+
+    return render_template('search.html', **context)
+
 def valid_login(username):
     cmd = 'SELECT uid FROM Users where name=:name1'
     cursor = g.conn.execute(text(cmd), name1=username);
@@ -127,7 +223,6 @@ def login():
         if valid_login(request.form['username'])==true:
             print 'valid session for ', request.form['username']
             session['username'] = request.form['username']
-            print session['username']
             return redirect(url_for('profile', username=session['username']))
         else:
             error = 'Invalid username'

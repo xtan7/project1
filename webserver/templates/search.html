@@ -1,0 +1,29 @@
+<html>
+  <style>
+    body{ 
+      font-size: 15pt;
+      font-family: arial;
+    }
+    table, th, td{
+      text-align: left;
+    }
+  </style>
+
+
+<body>
+  <h1>Search results matching '{{query}}'</h1>
+
+<p><b>Songs:</b><br>
+  {% for n in songResults %}
+  <div>"{{n}}"</div>
+  {% endfor %}
+</p>
+
+<form action="/user/{{name}}/music">
+<input type="submit" value="Back to music">
+</form>
+
+</body>
+
+
+</html>

@@ -1,0 +1,35 @@
+<html>
+  <style>
+    body{ 
+      font-size: 15pt;
+      font-family: arial;
+    }
+    table, th, td{
+      text-align: left;
+    }
+  </style>
+
+
+<body>
+  <h1>Create New Station</h1>
+
+
+<form method="POST" action="/user/{{name}}/create_station">
+Station Name*: <input type="text" name="stationName"> <font color="red" size=3>{{error}}</font><br>
+Theme: <input type="text" name="theme"> <font size=3>(e.g. dance, workout, relax, etc.)</font><br>
+<font size=3>*<i>Indicates required field</i></font> <br>
+<input type="submit" value="Create">
+</form>
+
+<form action="/user/{{name}}/music">
+<input type="submit" value="Back to music">
+</form>
+
+<p>
+  <b>{{message}}</b>
+</p>
+
+</body>
+
+
+</html>

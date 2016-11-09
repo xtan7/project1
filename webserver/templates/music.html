@@ -1,0 +1,97 @@
+<html>
+  <style>
+    body{ 
+      font-size: 15pt;
+      font-family: arial;
+    }
+    table, th, td{
+      text-align: left;
+      vertical-align: top;
+      border-collapse: collapse;
+      border: 1px solid #dddddd;
+    }
+    th{ 
+      background-color: #dddddd;
+    }
+  </style>
+
+
+<body>
+  <h1>Music Library</h1>
+
+<form action="/user/{{name}}/create_station">
+<input type="image" src="http://img.freepik.com/free-icon/add-interface-circular-symbol-with-plus-sign_318-67290.jpg?size=338&ext=jpg" alt="Submit" width="30" height="30">
+Click to create new station.
+</form>
+
+<form method="POST" action="/user/{{name}}/search/{{query}}">
+<p>Quick Search: <input type="search" name="query"> <input type="submit" value="Search"></p>
+</form>
+
+
+<p>
+  <b>{{name}}'s Music:</b>
+</p>
+<table style="width:75%">
+  <tr>
+    <th>Recently Played <br>
+      (showing last 10 played songs)</th>
+    <th>My Stations</th>
+  </tr>
+  <tr>
+    <td>
+      {% for n in played %}
+      <div>"{{n}}"</div>
+      {% endfor %}
+    </td>
+    <td>
+      {% for n in stations %}
+      <div>"{{n}}"</div>
+      {% endfor %}
+    </td>
+    
+  </tr>
+</table>
+
+<p>
+  <b>Search by:</b><br>
+  <font size=3><i>Showing first 10 results</i></font>
+</p>
+<table style="width:75%">
+  <tr>
+    <th>Artist</th>
+    <th>Popular Songs (over last 6 months)</th> 
+    <th>Album</th> 
+    <th>Genre</th>
+  </tr>
+  <tr>
+    <td>
+      {% for n in artists %}
+      <div>{{n}}</div>
+      {% endfor %}
+    </td>
+    <td>
+      {% for n in songs %}
+      <div>"{{n}}"</div>
+      {% endfor %}
+    </td>
+    <td>
+      {% for n in albums %}
+      <div><i>{{n}}</i></div>
+      {% endfor %}
+    </td>
+    <td>
+      {% for n in genres %}
+      <div>{{n}}</div>
+      {% endfor %}
+    </td>
+    
+  </tr>
+</table>
+
+
+
+</body>
+
+
+</html>
