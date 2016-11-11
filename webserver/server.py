@@ -269,7 +269,7 @@ def get_song_favs_for_user():
     user_song_favs = {}
     for result in cursor:
         print result
-        user_song_favs[result[0]] = {'title':result[1], 'genre':result[2], 'album':result[3], 'artist':result[4]}
+        user_song_favs[result[0]] = [result[1], result[2], result[3], result[4]]
     cursor.close()
     return user_song_favs
 
@@ -281,9 +281,9 @@ def get_friends():
     for result in cursor:
         print result
         if result[0]==username:
-            friends[result[1]] = {'name':result[4], 'isfriend':result[2]}
+            friends[result[1]] = [result[4], result[2]]
         else: 
-            friends[result[0]] = {'name':result[3], 'isfriend':result[2]}
+            friends[result[0]] = [result[3], result[2]]
     cursor.close()
     return friends
 
@@ -303,7 +303,7 @@ def get_subs():
     subs = {}
     for result in cursor:
         print result
-        subs[result[1]] = {'stagename':result[0]}
+        subs[result[1]] = [result[0]]
     cursor.close();
     return subs
 

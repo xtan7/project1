@@ -25,9 +25,32 @@
 <form method="POST" action="/logout">
 <p><input type="submit" value="Log Out"></p>
 </form>
-<table style="width:25%">
+<table style="width:20%";display:inline-block>
   {% for key, value in stations.iteritems() %}
-  <tr><td>{{value[0]}}</td><td>{{value[1]}}</td><td>"hi"</td></tr>
+    {% for n in value %}
+       <tr><td>{{n}}</td></tr>
+    {% endfor %}
+  {% endfor %}
+</table>
+<table style="width:20%";display:inline-block>
+  {% for key, value in favs.iteritems() %}
+    {% for n in value %}
+      <tr><td>{{n}}</td></tr>
+    {% endfor %}
+  {% endfor %}
+</table>
+<table style="width:20%";display:inline-block>
+  {% for key, value in friends.iteritems() %}
+    {% for n in value %}
+      <tr><td>{{n}}</td></tr>
+    {% endfor %}
+  {% endfor %}
+</table>
+<table style="width:20%";display:inline-block>
+  {% for key, value in subs.iteritems() %}
+    {% for n in value %}
+      <tr><td>{{n}}</td></tr>
+    {% endfor %}
   {% endfor %}
 </table>
 
