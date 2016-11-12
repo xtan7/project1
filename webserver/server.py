@@ -1,5 +1,6 @@
 #!/usr/bin/env python2.7
 
+
 """
 Columbia W4111 Intro to databases
 Example webserver
@@ -305,7 +306,7 @@ def username_exists(username):
     return False
 
 
-#AFTER LOGIN - user session username
+#AFTER LOGIN - use session username
 ########################################
 def get_stations_for_user():
     username = session['username']
@@ -322,6 +323,27 @@ def get_stations_for_user():
     cursor.close()
     return user_stations
 
+def get_albums_for_user():
+    username = session['username']
+    cmd = 'SELECT albumid_release.albumid, album_release.title, album_release.genre, album_release.releasedate FROM album_release, Users WHERE Users.name=:username1 AND Users.uid=album_release.uid'
+    cursor = g.conn.execute(text(cmd), username1=username)
+    albums = {}
+    for result in cursor:
+        print 'album', result
+        albums[result[0]] = [result[1], result[2], result[3]]
+    cursor.close()
+    return albums
+
+def get_songs_in_album(albumid):
+    cmd = 'SELECT songid, title, genre FROM song WHERE albumid=:albumid1'
+    cursor = g.conn.execute(text(cmd), albumid1=albumid)
+    songs = {}
+    for result in cursor:
+        print 'song', result
+        songs[rsult[0]] = [result[1], result[2], result[3]]
+    cursor.close()
+    return songs
+
 def get_song_favs_for_user():
     username = session['username']
     cmd = 'SELECT song.songid, song.title, song.genre, album_release.title, artist.stagename FROM song, album_release, artist, song_favorites, Users WHERE Users.username=:username1 AND Users.uid=song_favorites.uid AND song.songid=song_favorites.songid AND album_release.albumid=song.albumid AND song.uid=artist.uid'
@@ -329,7 +351,7 @@ def get_song_favs_for_user():
     user_song_favs = {}
     for result in cursor:
         print result
-        user_song_favs[result[0]] = {'title':result[1], 'genre':result[2], 'album':result[3], 'artist':result[4]}
+        user_song_favs[result[0]] = [result[1], result[2], result[3], result[4]]
     cursor.close()
     return user_song_favs
 
@@ -340,10 +362,10 @@ def get_friends():
     friends = {}
     for result in cursor:
         print result
-        if result[0]==username:
-            friends[result[1]] = {'name':result[4], 'isfriend':result[2]}
+        if result[3]==username:
+            friends[result[1]] = [result[4], result[2]]
         else: 
-            friends[result[0]] = {'name':result[3], 'isfriend':result[2]}
+            friends[result[0]] = [result[3], result[2]]
     cursor.close()
     return friends
 
@@ -363,7 +385,7 @@ def get_subs():
     subs = {}
     for result in cursor:
         print result
-        subs[result[1]] = {'stagename':result[0]}
+        subs[result[1]] = [result[0]]
     cursor.close();
     return subs
 
@@ -402,7 +424,7 @@ def profile(username):
         print n
     return render_template('user.html', name=name, username=username, stations=stations, favs=favs, friends=friends, subs=subs)
 
-@app.route('/logout', methods=['POST'])
+@app.route('/logout', methods=['GET', 'POST'])
 def logout():
     print "logging out"
     session.pop('username', None)
@@ -464,10 +486,23 @@ app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
 #     #     my_list=[6,7,8,9,10,11], title="Home", current_time=datetime.datetime.now())
 #     return redirect(url_for('profile', username=session['username']))
 
+<<<<<<< HEAD
 # @app.route("/about")
 # def about():
 #     return render_template('template.html', my_string="Bar", 
 #         my_list=[12,13,14,15,16,17], title="About", current_time=datetime.datetime.now())
+=======
+@app.route("/signout")
+def signout():
+    # return render_template('template.html', my_string="Foo", 
+    #     my_list=[6,7,8,9,10,11], title="Home", current_time=datetime.datetime.now())
+    return redirect(url_for('logout'))
+
+@app.route("/about")
+def about():
+    return render_template('template.html', my_string="Bar", 
+        my_list=[12,13,14,15,16,17], title="About", current_time=datetime.datetime.now())
+>>>>>>> 3690c1a78c631de7f9364869d3e64b9266e6a867
 
 # @app.route("/contact")
 # def contact():

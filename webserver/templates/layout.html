@@ -27,12 +27,18 @@
 
         <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
           <ul class="nav navbar-nav">
+<<<<<<< HEAD
             {{ nav_link('profile', 'Home', request.path) }}
             {{ nav_link('music', 'Music', request.path) }}
             {{ nav_link('favorites', 'My Favorites', request.path) }}
             {{ nav_link('friends', 'My Friends', request.path) }}
+=======
+            {{ nav_link('home', 'Home') }}
+>>>>>>> 3690c1a78c631de7f9364869d3e64b9266e6a867
           </ul>
           <ul class="nav navbar-nav navbar-right">
+            {{ nav_link('signout', 'Sign Out') }}
+            <!--
             <li><a href="#">Link</a></li>
             <li class="dropdown">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown">Dropdown <b class="caret"></b></a>
@@ -44,6 +50,7 @@
                 <li><a href="#">Separated link</a></li>
               </ul>
             </li>
+            -->
           </ul>
         </div><!-- /.navbar-collapse -->
       </div><!-- /.container-fluid -->
