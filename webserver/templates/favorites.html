@@ -1,0 +1,64 @@
+<html>
+  <style>
+    body{ 
+      font-size: 15pt;
+      font-family: arial;
+    }
+    table, th, td{
+      text-align: left;
+      vertical-align: top;
+      border-collapse: collapse;
+      border: 1px solid #dddddd;
+    }
+    th{ 
+      background-color: #dddddd;
+    }
+  </style>
+{% extends "layout.html" %}
+{% block content %}
+
+
+<body>
+  <h1>{{name}}'s Favorites and Subscriptions</h1>
+
+
+<table style="width:75%">
+  <tr>
+    <th>Artists</th>
+    <th>Songs</th>
+    <th>Albums</th>
+    <th>Stations</th>
+  </tr>
+  <tr>
+    <td>
+      {% for n in artists %}
+      <div>{{n}}</div>
+      {% endfor %}
+    </td>
+    <td>
+      {% for n in songs %}
+      <div>"{{n}}"</div>
+      {% endfor %}
+    </td>
+    <td>
+      {% for n in albums %}
+      <div><i>{{n}}</i></div>
+      {% endfor %}
+    </td>
+    <td>
+      {% for n in stations %}
+      <div>"{{n}}"</div>
+      {% endfor %}
+    </td>
+    
+  </tr>
+</table>
+
+<br>
+<br>
+</body>
+{% endblock %}
+
+
+
+</html>

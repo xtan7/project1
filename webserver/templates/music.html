@@ -14,6 +14,8 @@
       background-color: #dddddd;
     }
   </style>
+{% extends "layout.html" %}
+{% block content %}
 
 
 <body>
@@ -24,8 +26,9 @@
 Click to create new station.
 </form>
 
-<form method="POST" action="/user/{{name}}/search/{{query}}">
+<form method="POST" action="/user/{{name}}/music_search">
 <p>Quick Search: <input type="search" name="query"> <input type="submit" value="Search"></p>
+<p><font color="red">{{error}}</font></p>
 </form>
 
 
@@ -54,8 +57,9 @@ Click to create new station.
 </table>
 
 <p>
+  <br>
   <b>Search by:</b><br>
-  <font size=3><i>Showing first 10 results</i></font>
+  <font size=2><i>Showing first 10 results</i></font>
 </p>
 <table style="width:75%">
   <tr>
@@ -88,10 +92,11 @@ Click to create new station.
     
   </tr>
 </table>
-
-
-
+<br>
+<br>
 </body>
+{% endblock %}
+
 
 
 </html>

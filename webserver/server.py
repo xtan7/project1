@@ -122,7 +122,11 @@ def add_user(username, name, dob):
         return False
     return True
 
-@app.route('/user/<username>/music', methods=["POST"])
+@app.route('/user/<username>/friends', methods=['GET','POST'])
+def friends(username):
+    return render_template('friends.html')
+
+@app.route('/user/<username>/music', methods=['GET','POST'])
 def music(username):
     # Find uid
     cmd = "SELECT uid FROM users WHERE users.username=%s"
@@ -178,6 +182,50 @@ def music(username):
 
     return render_template('music.html', **context)
 
+@app.route('/user/<username>/favorites')
+def favorites(username):
+    # Find uid
+    cmd = "SELECT uid FROM users WHERE users.username=%s"
+    cursor = g.conn.execute(cmd, username)
+    result = cursor.first()
+    uid = result[0]
+
+    cmd = "SELECT A.stagename FROM artist AS A, subscription as S WHERE S.uid1=%s and S.uid2=A.uid LIMIT 10"
+    cursor = g.conn.execute(cmd, uid)
+    artists = []
+    for result in cursor:
+        artists.append(result[0])  # can also be accessed using result[0]
+    cursor.close()
+
+    cmd = "SELECT S.title FROM song_favorites AS fav, song as S WHERE fav.uid=%s and S.songid=fav.songid LIMIT 10"
+    cursor = g.conn.execute(cmd, uid)
+    songs = []
+    for result in cursor:
+        songs.append(result[0])  # can also be accessed using result[0]
+    cursor.close()
+
+    cmd = "SELECT A.title FROM album_favorites AS fav, album_release as A WHERE fav.uid=%s and A.albumid=fav.albumid LIMIT 10"
+    cursor = g.conn.execute(cmd, uid)
+    albums = []
+    for result in cursor:
+        albums.append(result[0])  # can also be accessed using result[0]
+    cursor.close()
+
+    cmd = "SELECT S.name FROM station_favorites AS fav, create_station as S WHERE fav.uid=%s and S.stationid=fav.stationid and S.uid=fav.stationauthorid LIMIT 10"
+    cursor = g.conn.execute(cmd, uid)
+    stations = []
+    for result in cursor:
+        stations.append(result[0])  # can also be accessed using result[0]
+    cursor.close()
+
+    context = dict(name = username)
+    context['artists'] = artists
+    context['songs'] = songs
+    context['albums'] = albums
+    context['stations'] = stations
+
+    return render_template('favorites.html', **context)
+
 @app.route('/user/<username>/create_station', methods=['GET', 'POST'])
 def creation_station(username):
     if request.method == 'POST':
@@ -205,8 +253,20 @@ def creation_station(username):
     else:
         return render_template('create_station.html', name=username)
 
-@app.route('/user/<username>/search/<query>')
-def search(username, query):
+@app.route('/user/<username>/music_search', methods=['GET', 'POST'])
+def validate_music_search(username):
+    if request.method == 'POST':
+        if request.form['query'] != '':
+            return redirect(url_for('music_search', username=session['username'], query=request.form['query']))
+        else:
+            error = 'Please enter search query'
+            print error
+            return render_template('music.html', error=error)
+    else:
+        return render_template('music.html')
+
+@app.route('/user/<username>/music_search/<query>', methods=['GET', 'POST'])
+def music_search(username, query):
     cmd = "SELECT stagename FROM artist WHERE stagename ILIKE " + "'%" + "%s" + "%'" 
     cursor = g.conn.execute(cmd, query)
     songResults = []
@@ -216,7 +276,7 @@ def search(username, query):
 
     context = dict(songResults = songResults)
 
-    return render_template('search.html', **context)
+    return render_template('music_search.html')
 
 def valid_login(username):
     cmd = 'SELECT uid FROM Users where name=:name1'
@@ -385,34 +445,34 @@ def signup():
 app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
 
 
-import datetime
-@app.template_filter()
-def datetimefilter(value, format='%Y/%m/%d %H:%M'):
-    """convert a datetime to a different format."""
-    return value.strftime(format)
+# import datetime
+# @app.template_filter()
+# def datetimefilter(value, format='%Y/%m/%d %H:%M'):
+#     """convert a datetime to a different format."""
+#     return value.strftime(format)
 
-app.jinja_env.filters['datetimefilter'] = datetimefilter
+# app.jinja_env.filters['datetimefilter'] = datetimefilter
 
-@app.route("/template")
-def template_test():
-    return render_template('template.html', my_string="Wheeeee!", 
-        my_list=[0,1,2,3,4,5], title="Index", current_time=datetime.datetime.now())
+# @app.route("/template")
+# def template_test():
+#     return render_template('template.html', my_string="Wheeeee!", 
+#         my_list=[0,1,2,3,4,5], title="Index", current_time=datetime.datetime.now())
 
-@app.route("/home")
-def home():
-    # return render_template('template.html', my_string="Foo", 
-    #     my_list=[6,7,8,9,10,11], title="Home", current_time=datetime.datetime.now())
-    return redirect(url_for('profile', username=session['username']))
+# @app.route("/home")
+# def home():
+#     # return render_template('template.html', my_string="Foo", 
+#     #     my_list=[6,7,8,9,10,11], title="Home", current_time=datetime.datetime.now())
+#     return redirect(url_for('profile', username=session['username']))
 
-@app.route("/about")
-def about():
-    return render_template('template.html', my_string="Bar", 
-        my_list=[12,13,14,15,16,17], title="About", current_time=datetime.datetime.now())
+# @app.route("/about")
+# def about():
+#     return render_template('template.html', my_string="Bar", 
+#         my_list=[12,13,14,15,16,17], title="About", current_time=datetime.datetime.now())
 
-@app.route("/contact")
-def contact():
-    return render_template('template.html', my_string="FooBar"
-        , my_list=[18,19,20,21,22,23], title="Contact Us", current_time=datetime.datetime.now())
+# @app.route("/contact")
+# def contact():
+#     return render_template('template.html', my_string="FooBar"
+#         , my_list=[18,19,20,21,22,23], title="Contact Us", current_time=datetime.datetime.now())
 
 
 

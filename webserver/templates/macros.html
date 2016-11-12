@@ -1,7 +1,9 @@
-{% macro nav_link(endpoint, name) %}
+{% macro nav_link(endpoint, name, path) %}
+{% set splitpath = path.split('/') %}
+{% set username = splitpath[2] %}
 {% if request.endpoint.endswith(endpoint) %}
-  <li class="active"><a href="{{ url_for(endpoint) }}">{{name}}</a></li>
+  <li class="active"><a href="{{ url_for(endpoint, username=username) }}">{{name}}</a></li>
 {% else %}
-  <li><a href="{{ url_for(endpoint) }}">{{name}}</a></li>
+  <li><a href="{{ url_for(endpoint, username=username) }}">{{name}}</a></li>
 {% endif %}
 {% endmacro %}
