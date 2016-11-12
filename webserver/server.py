@@ -1,5 +1,6 @@
 #!/usr/bin/env python2.7
 
+
 """
 Columbia W4111 Intro to databases
 Example webserver
@@ -245,7 +246,7 @@ def username_exists(username):
     return False
 
 
-#AFTER LOGIN - user session username
+#AFTER LOGIN - use session username
 ########################################
 def get_stations_for_user():
     username = session['username']
@@ -261,6 +262,27 @@ def get_stations_for_user():
         user_stations[result[0]] = [result[1], result[2]]
     cursor.close()
     return user_stations
+
+def get_albums_for_user():
+    username = session['username']
+    cmd = 'SELECT albumid_release.albumid, album_release.title, album_release.genre, album_release.releasedate FROM album_release, Users WHERE Users.name=:username1 AND Users.uid=album_release.uid'
+    cursor = g.conn.execute(text(cmd), username1=username)
+    albums = {}
+    for result in cursor:
+        print 'album', result
+        albums[result[0]] = [result[1], result[2], result[3]]
+    cursor.close()
+    return albums
+
+def get_songs_in_album(albumid):
+    cmd = 'SELECT songid, title, genre FROM song WHERE albumid=:albumid1'
+    cursor = g.conn.execute(text(cmd), albumid1=albumid)
+    songs = {}
+    for result in cursor:
+        print 'song', result
+        songs[rsult[0]] = [result[1], result[2], result[3]]
+    cursor.close()
+    return songs
 
 def get_song_favs_for_user():
     username = session['username']
@@ -280,7 +302,7 @@ def get_friends():
     friends = {}
     for result in cursor:
         print result
-        if result[0]==username:
+        if result[3]==username:
             friends[result[1]] = [result[4], result[2]]
         else: 
             friends[result[0]] = [result[3], result[2]]
@@ -342,7 +364,7 @@ def profile(username):
         print n
     return render_template('user.html', name=name, username=username, stations=stations, favs=favs, friends=friends, subs=subs)
 
-@app.route('/logout', methods=['POST'])
+@app.route('/logout', methods=['GET', 'POST'])
 def logout():
     print "logging out"
     session.pop('username', None)
@@ -403,6 +425,12 @@ def home():
     # return render_template('template.html', my_string="Foo", 
     #     my_list=[6,7,8,9,10,11], title="Home", current_time=datetime.datetime.now())
     return redirect(url_for('profile', username=session['username']))
+
+@app.route("/signout")
+def signout():
+    # return render_template('template.html', my_string="Foo", 
+    #     my_list=[6,7,8,9,10,11], title="Home", current_time=datetime.datetime.now())
+    return redirect(url_for('logout'))
 
 @app.route("/about")
 def about():
