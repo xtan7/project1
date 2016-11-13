@@ -1,0 +1,65 @@
+<html>
+<!--<link rel="stylesheet" type="text/css" href="style.css"/>-->
+<style>
+    body{ 
+      font-size: 15pt;
+      font-family: arial;
+    }
+    table, th, td{
+      text-align: left;
+      vertical-align: top;
+      border-collapse: collapse;
+      border: 1px solid #dddddd;
+    }
+    th{ 
+      background-color: #dddddd;
+    }
+</style>
+{% extends "layout.html" %}
+{% block content %}
+
+
+<body>
+<div style="float: left; width:40%; margin-right:20px">
+<form action="/user/{{username}}/create_album">
+Albums
+<input type="image" src="http://img.freepik.com/free-icon/add-interface-circular-symbol-with-plus-sign_318-67290.jpg?size=338&ext=jpg" alt="Submit" width="15" height="15">
+</form>
+<div class="table">
+<table >
+  <tr>
+    <th>Title</th>
+    <th>Genre</th>
+    <th>Release Date</th>
+  </tr>
+  {% for key, value in albums.iteritems() %}
+    <tr>
+    <td>{{value[0]}}</td><td>{{value[1]}}</td><td>{{value[2]}}</td>
+    </tr>
+  {% endfor %}
+</table>
+</div>
+</div>
+<div style="float: left; width:45%; margin-right:20px">
+Album Songs
+<div class="table">
+<table >
+  <tr>
+    <th>Name</th>
+    <th>Genre</th>
+  </tr>
+  {% for key, value in songs.iteritems() %}
+    <tr>
+    <td>{{value[0]}}</td><td>{{value[1]}}</td>
+    </tr>
+  {% endfor %}
+</table>
+</div>
+</div>
+
+</body>
+
+{% endblock %}
+
+
+</html>

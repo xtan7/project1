@@ -2,8 +2,16 @@
 {% set splitpath = path.split('/') %}
 {% set username = splitpath[2] %}
 {% if request.endpoint.endswith(endpoint) %}
-  <li class="active"><a href="{{ url_for(endpoint, username=username) }}">{{name}}</a></li>
+  {% if name!='Artist' %}
+    <li class="active"><a href="{{ url_for(endpoint, username=username) }}">{{name}}</a></li>
+  {% else %}
+    <li class="active"><a href="{{ url_for(endpoint, username=username, albumid=0) }}">{{name}}</a></li>
+  {% endif %}
 {% else %}
-  <li><a href="{{ url_for(endpoint, username=username) }}">{{name}}</a></li>
+  {% if name!='Artist' %}
+    <li><a href="{{ url_for(endpoint, username=username) }}">{{name}}</a></li>
+  {% else %}
+    <li><a href="{{ url_for(endpoint, username=username, albumid=0) }}">{{name}}</a></li>
+  {% endif %}
 {% endif %}
 {% endmacro %}
