@@ -486,12 +486,6 @@ app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
 #     #     my_list=[6,7,8,9,10,11], title="Home", current_time=datetime.datetime.now())
 #     return redirect(url_for('profile', username=session['username']))
 
-<<<<<<< HEAD
-# @app.route("/about")
-# def about():
-#     return render_template('template.html', my_string="Bar", 
-#         my_list=[12,13,14,15,16,17], title="About", current_time=datetime.datetime.now())
-=======
 @app.route("/signout")
 def signout():
     # return render_template('template.html', my_string="Foo", 
@@ -502,7 +496,6 @@ def signout():
 def about():
     return render_template('template.html', my_string="Bar", 
         my_list=[12,13,14,15,16,17], title="About", current_time=datetime.datetime.now())
->>>>>>> 3690c1a78c631de7f9364869d3e64b9266e6a867
 
 # @app.route("/contact")
 # def contact():
