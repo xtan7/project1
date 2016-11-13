@@ -325,7 +325,7 @@ def get_stations_for_user():
 
 def get_albums_for_user():
     username = session['username']
-    cmd = 'SELECT albumid_release.albumid, album_release.title, album_release.genre, album_release.releasedate FROM album_release, Users WHERE Users.name=:username1 AND Users.uid=album_release.uid'
+    cmd = 'SELECT album_release.albumid, album_release.title, album_release.genre, album_release.releasedate FROM album_release, Users WHERE Users.name=:username1 AND Users.uid=album_release.uid ORDER BY album_release.releasedate DESC'
     cursor = g.conn.execute(text(cmd), username1=username)
     albums = {}
     for result in cursor:
@@ -334,13 +334,14 @@ def get_albums_for_user():
     cursor.close()
     return albums
 
+
 def get_songs_in_album(albumid):
     cmd = 'SELECT songid, title, genre FROM song WHERE albumid=:albumid1'
     cursor = g.conn.execute(text(cmd), albumid1=albumid)
     songs = {}
     for result in cursor:
         print 'song', result
-        songs[rsult[0]] = [result[1], result[2], result[3]]
+        songs[result[0]] = [result[1], result[2]]
     cursor.close()
     return songs
 
@@ -424,6 +425,27 @@ def profile(username):
         print n
     return render_template('user.html', name=name, username=username, stations=stations, favs=favs, friends=friends, subs=subs)
 
+@app.route('/user/<username>/artist', methods=['GET'])
+def artist(username):
+   print "albumid"
+   albums = get_albums_for_user()
+   songs = {}
+   albumid=0
+   if albumid !=0:
+       songs = get_songs_in_album(albumid)
+   else:
+       for i in albums:
+           songs = get_songs_in_album(i)
+           break;
+   return render_template('artist.html', username=session['username'], albumid=albumid, albums=albums, songs=songs)
+
+@app.route('/user/<username>/create_album', methods=['GET', 'POST'])
+def create_album(username):
+    if request.method == 'POST':
+        return render_template('create_album.html', username=session['username'])
+    else:
+        return render_template('create_album.html', username=session['username'])
+
 @app.route('/logout', methods=['GET', 'POST'])
 def logout():
     print "logging out"
@@ -467,24 +489,30 @@ def signup():
 app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
 
 
-# import datetime
-# @app.template_filter()
-# def datetimefilter(value, format='%Y/%m/%d %H:%M'):
-#     """convert a datetime to a different format."""
-#     return value.strftime(format)
+import datetime
+@app.template_filter()
+def datetimefilter(value, format='%Y/%m/%d %H:%M'):
+     """convert a datetime to a different format."""
+     return value.strftime(format)
 
-# app.jinja_env.filters['datetimefilter'] = datetimefilter
+app.jinja_env.filters['datetimefilter'] = datetimefilter
 
-# @app.route("/template")
-# def template_test():
-#     return render_template('template.html', my_string="Wheeeee!", 
-#         my_list=[0,1,2,3,4,5], title="Index", current_time=datetime.datetime.now())
+@app.route("/template")
+def template_test():
+     return render_template('template.html', my_string="Wheeeee!", 
+         my_list=[0,1,2,3,4,5], title="Index", current_time=datetime.datetime.now())
 
-# @app.route("/home")
-# def home():
-#     # return render_template('template.html', my_string="Foo", 
+@app.route("/home")
+def home():
+    return redirect(url_for('profile', username=session['username']))
 #     #     my_list=[6,7,8,9,10,11], title="Home", current_time=datetime.datetime.now())
 #     return redirect(url_for('profile', username=session['username']))
+
+
+# @app.route("/about")
+# def about():
+#     return render_template('template.html', my_string="Bar", 
+#         my_list=[12,13,14,15,16,17], title="About", current_time=datetime.datetime.now())
 
 @app.route("/signout")
 def signout():

@@ -40,7 +40,6 @@
 <p><input type="submit" value="Log Out"></p>
 </form>
 -->
-<p>Hi {{name}}!<p>
 <div style="float: left; width:20%; margin-right:20px">
 <form action="/user/{{name}}/create_station">
 Stations
@@ -60,11 +59,14 @@ Stations
     </tr>
   {% endfor %}
 </table>
+<<<<<<< HEAD
 
+=======
+>>>>>>> 2e3593b497bca768235a4295d977c66258c84877
 </div>
 </div>
 <div style="float: left; width:40%; margin-right:20px">
-<form action="/user/{{name}}/create_station">
+<form action="/user/{{name}}/favorites">
 Fav Songs
 <input type="image" src="http://img.freepik.com/free-icon/add-interface-circular-symbol-with-plus-sign_318-67290.jpg?size=338&ext=jpg" alt="Submit" width="15" height="15">
 </form>
@@ -87,7 +89,7 @@ Fav Songs
 </div>
 </div>
 <div style="float: left; width:20%; margin-right:20px">
-<form action="/user/{{name}}/create_station">
+<form action="/user/{{name}}/friends">
 Friends
 <input type="image" src="http://img.freepik.com/free-icon/add-interface-circular-symbol-with-plus-sign_318-67290.jpg?size=338&ext=jpg" alt="Submit" width="15" height="15">
 </form>
@@ -111,7 +113,7 @@ Friends
 </div>
 </div>
 <div style="float: left; width:10%; margin-right:20px">
-<form action="/user/{{name}}/create_station">
+<form action="/user/{{name}}/favorites">
 Subscriptions
 <input type="image" src="http://img.freepik.com/free-icon/add-interface-circular-symbol-with-plus-sign_318-67290.jpg?size=338&ext=jpg" alt="Submit" width="15" height="15">
 </form>
@@ -135,6 +137,7 @@ Subscriptions
 <p><input type="submit" value="Go to Music"></p>
 </form>
 -->
+
 </body>
 
 {% endblock %}

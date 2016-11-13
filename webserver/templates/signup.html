@@ -6,23 +6,15 @@
     }
   </style>
 
+{% extends "layout.html" %}
+{% block content %}
 
 <body>
-  <h1>Fav Music App</h1>
-<!--  <div>{{data}}</div>
-
-  <div>
-    {% for n in data %}
-    <div>{{n}}</div>
-    {% endfor %}
-  </div>
--->
-<!--<p><a href="/another">Go to the other page</a></p>-->
 
 <form method="POST" action="/signup">
-<p>Username:<input type="text" name="username"></p>
-<p>Name:<input type="text" name="name"></p>
-<p>Birthday:<input type="date" name="dob"></p>
+<p>Username:<input type="text" name="username" required="required" pattern="[A-Za-z0-9]{1,20}"></p>
+<p>Name:<input type="text" name="name" required="required" pattern="[A-Za-z0-9]{1,20}"></p>
+<p>Birthday:<input type="date" name="dob" required="required"></p>
 <p><input type="submit" value="Sign Up"></p>
 <p><font color="red">{{error}}</font></p>
 </form>
@@ -30,4 +22,5 @@
 </body>
 
 
+{% endblock %}
 </html>

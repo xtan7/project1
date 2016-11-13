@@ -1,0 +1,54 @@
+<html>
+<!--<link rel="stylesheet" type="text/css" href="style.css"/>-->
+<style>
+    body{ 
+      font-size: 15pt;
+      font-family: arial;
+    }
+    table, th, td{
+      text-align: left;
+      vertical-align: top;
+      border-collapse: collapse;
+      border: 1px solid #dddddd;
+    }
+    th{ 
+      background-color: #dddddd;
+    }
+</style>
+{% extends "layout.html" %}
+{% block content %}
+
+
+<body>
+<form method="POST" action="/user/<username>/create_album">
+<p>Album Title:<input type="text" name="username" required="required" pattern="[A-Za-z0-9]{1,20}"></p>
+<p>Genre:<input type="text" name="name" required="required" pattern="[A-Za-z0-9]{1,20}"></p>
+<div style="float: left; width:80%">
+Songs
+<div class="table">
+<table >
+  <tr>
+    <th>Track No.</th>
+    <th>Name</th>
+    <th>Genre</th>
+  </tr>
+  {% for n in range(0,20) %}
+    <tr>
+      <td>{{n+1}}</td>
+    {% for n in range(0,2) %}
+       <td></td>
+    {% endfor %}
+    </tr>
+  {% endfor %}
+</table>
+</div>
+<p><input type="submit" value="Create Album"></p>
+<p><font color="red">{{error}}</font></p>
+</form>
+
+</body>
+
+{% endblock %}
+
+
+</html>
