@@ -33,8 +33,12 @@ Albums
     <th>Release Date</th>
   </tr>
   {% for key, value in albums.iteritems() %}
-    <tr>
-    <td>{{value[0]}}</td><td>{{value[1]}}</td><td>{{value[2]}}</td>
+    {% if value[0]!=albumname %}
+      <tr>
+    {% else %}
+      <tr bgcolor='silver'>
+    {% endif %}
+    <td><a href="{{ url_for('artist', username=username, albumname=value[0]) }}">{{value[0]}}</a></td><td>{{value[1]}}</td><td>{{value[2]}}</td>
     </tr>
   {% endfor %}
 </table>

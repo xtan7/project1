@@ -361,9 +361,9 @@ def get_albums_for_user():
     return albums
 
 
-def get_songs_in_album(albumid):
-    cmd = 'SELECT songid, title, genre FROM song WHERE albumid=:albumid1'
-    cursor = g.conn.execute(text(cmd), albumid1=albumid)
+def get_songs_in_album(albumname):
+    cmd = 'SELECT song.songid, song.title, song.genre FROM album_release, song WHERE album_release.title=:albumname1 AND album_release.albumid=song.albumid'
+    cursor = g.conn.execute(text(cmd), albumname1=albumname)
     songs = {}
     for result in cursor:
         print 'song', result
@@ -416,6 +416,58 @@ def get_subs():
     cursor.close();
     return subs
 
+def get_artist():
+    username = session['username']
+    cmd = "SELECT artist.stagename FROM artist, Users WHERE Users.username=:username1 AND Users.uid=artist.uid"
+    cursor = g.conn.execute(text(cmd), username1=username)
+    for result in cursor:
+        print "stagename", result
+        cursor.close();
+        return True
+    return False
+
+def add_artist(stagename):
+    username = session['username']
+    cmd = "SELECT uid FROM Users where username=:username1"
+    cursor = g.conn.execute(text(cmd), username1=username)
+    uid = 0;
+    for result in cursor:
+        print result
+        uid = result
+    cusror.close()
+    cmd2 = "INSERT INTO artist (uid, stagename) VALUES(:uid1, :stagename1)"
+    g.conn.execute(text(cmd), uid1=uid, stagename1=stagename)
+    return get_artist_uid()
+
+def get_artist_uid():
+    username = session['username']
+    cmd = "SELECT artist.uid FROM artist, Users WHERE Users.uid=artist.uid AND Users.username=:username1"
+    cursor = g.conn.execute(text(cmd), username1=username)
+    uid = 0
+    for result in cursor:
+        print result
+        uid = result
+    cursor.close()
+    return uid
+
+def add_album(title, genre):
+    username = session['username']
+    cmd="INSERT INTO album_release (albumid, title, genre, uid, releasedate) VALUES(DEFAULT, :title1, :genre1, :uid1, now())"
+    uid = get_artist_uid()
+    g.conn.execute(text(cmd), title1=title, genre1=genre, uid1=uid)
+    cmd2= "SELECT albumid FROM album_release WHERE title=:title1"
+    cursor = g.conn.execute(text(cmd), title1=title)
+    albumid = 0
+    for result in cursor:
+        print result
+        albumid= result
+    cursor.close()
+    return albumid
+
+def add_song_to_album(name, genre, albumid, uid):
+    cmd="INSERT INTO song (songid, albumid, title, genre, uid) VALUES(DEFAULT, :name1, :genre1, :albumid1, :uid1)"
+    g.conn.execute(text(cmd), name1=name, genre1=genre, albumid1=albumid, uid1=uid)
+    
 
 #ROUTE FUNCTIONS
 ###############################################
@@ -450,26 +502,50 @@ def profile(username):
         print n
     return render_template('user.html', name=name, username=username, stations=stations, favs=favs, friends=friends, subs=subs)
 
-@app.route('/user/<username>/artist', methods=['GET'])
+@app.route('/user/<username>/artist', methods=['GET', 'POST'])
 def artist(username):
-   print "albumid"
+   print request
+   print "path", request.path
+   print "full_path", request.full_path
+   tokens = request.full_path.split("=")
+   for i in tokens:
+      print "tokens", i 
+   albumname = tokens[1]
+   print "albumname", albumname
    albums = get_albums_for_user()
    songs = {}
-   albumid=0
-   if albumid !=0:
-       songs = get_songs_in_album(albumid)
+   if len(albumname) !=0:
+       songs = get_songs_in_album(albumname)
    else:
        for i in albums:
-           songs = get_songs_in_album(i)
+           print "getting songs for album", albums[i][0]
+           albumname = albums[i][0]
+           songs = get_songs_in_album(albums[i][0])
            break;
-   return render_template('artist.html', username=session['username'], albumid=albumid, albums=albums, songs=songs)
+   return render_template('artist.html', username=session['username'], albumname=albumname, albums=albums, songs=songs)
 
 @app.route('/user/<username>/create_album', methods=['GET', 'POST'])
 def create_album(username):
     if request.method == 'POST':
-        return render_template('create_album.html', username=session['username'])
+        is_artist = False
+        is_artist = get_artist();
+        uid = 0;
+        if is_artist!=True:
+            uid = add_artist(request.form['stagename'])
+        else:
+            uid = get_artist_uid()
+        if uid!=0:
+            albumid=0
+            albumid = add_album(request.form['album_title'], request.form['album_genre'])
+            if albumid!=0:
+                for n in range(1, 21):
+                    if request.form[""+n+"name"]!=None:
+                        add_song_to_album(request.form[""+n+"name"], request.form[""+n+"genre"], albumid, uid)
+        return redirect(url_for('artist', username=session['username']))
     else:
-        return render_template('create_album.html', username=session['username'])
+        is_artist = False
+        is_artist = get_artist();
+        return render_template('create_album.html', username=session['username'], is_artist=is_artist)
 
 @app.route('/logout', methods=['GET', 'POST'])
 def logout():
