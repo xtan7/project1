@@ -26,9 +26,8 @@
 Click to create new station.
 </form>
 
-<form method="POST" action="/user/{{name}}/music_search">
-<p>Quick Search: <input type="search" name="query"> <input type="submit" value="Search"></p>
-<p><font color="red">{{error}}</font></p>
+<form method="GET" action="/user/{{name}}/music_search">
+<p>Quick Search: <input type="search" name="query" required="required"> <input type="submit" value="Search"></p>
 </form>
 
 

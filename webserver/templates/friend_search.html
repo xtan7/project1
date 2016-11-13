@@ -20,29 +20,16 @@
 <body>
   <h1>Search results matching '{{query}}'</h1>
 
-<table style="width:75%">
+<table>
   <tr>
-    <th>Artists</th>
-    <th>Songs</th> 
-    <th>Albums</th> 
+    <th>Username</th>
+    <th>Name</th>
   </tr>
-  <tr>
-    <td>
-      {% for n in artistResults %}
-      <div>{{n}}</div>
-      {% endfor %}
-    </td>
-    <td>
-      {% for n in songResults %}
-      <div>"{{n}}"</div>
-      {% endfor %}
-    </td>
-    <td>
-      {% for n in albumResults %}
-      <div>"{{n}}"</div>
-      {% endfor %}
-    </td>
-  </tr>
+  {% for n in results %}
+    <tr>
+      <td>{{i}}</td>
+    </tr>
+  {% endfor %}
 </table>
 
 <br>

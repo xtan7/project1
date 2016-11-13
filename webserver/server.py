@@ -124,8 +124,8 @@ def add_user(username, name, dob):
     return True
 
 @app.route('/user/<username>/friends', methods=['GET','POST'])
-def friends(username):
-    return render_template('friends.html')
+def my_friends(username):
+    return render_template('friends.html', name=username)
 
 @app.route('/user/<username>/music', methods=['GET','POST'])
 def music(username):
@@ -254,30 +254,56 @@ def creation_station(username):
     else:
         return render_template('create_station.html', name=username)
 
-@app.route('/user/<username>/music_search', methods=['GET', 'POST'])
-def validate_music_search(username):
-    if request.method == 'POST':
-        if request.form['query'] != '':
-            return redirect(url_for('music_search', username=session['username'], query=request.form['query']))
-        else:
-            error = 'Please enter search query'
-            print error
-            return render_template('music.html', error=error)
-    else:
-        return render_template('music.html')
+@app.route('/user/<username>/music_search', methods=['GET'])
+def music_search(username):
+    query = request.args['query']
+    augmented_query = "%" + query + "%"
 
-@app.route('/user/<username>/music_search/<query>', methods=['GET', 'POST'])
-def music_search(username, query):
-    cmd = "SELECT stagename FROM artist WHERE stagename ILIKE " + "'%" + "%s" + "%'" 
-    cursor = g.conn.execute(cmd, query)
+    cmd = "SELECT stagename FROM artist WHERE stagename ILIKE %s"
+    cursor = g.conn.execute(cmd, augmented_query)
+    artistResults = []
+    for result in cursor:
+        artistResults.append(result[0])  # can also be accessed using result[0]
+    cursor.close()
+
+    cmd = "SELECT title FROM song WHERE title ILIKE %s"
+    cursor = g.conn.execute(cmd, augmented_query)
     songResults = []
     for result in cursor:
         songResults.append(result[0])  # can also be accessed using result[0]
     cursor.close()
 
-    context = dict(songResults = songResults)
+    cmd = "SELECT album_release.title FROM album_release WHERE title ILIKE %s"
+    cursor = g.conn.execute(cmd, augmented_query)
+    albumResults = []
+    for result in cursor:
+        print result
+        albumResults.append(result[0])  # can also be accessed using result[0]
+    cursor.close()
 
-    return render_template('music_search.html')
+    context = dict(artistResults = artistResults)
+    context['query'] = query
+    context['songResults'] = songResults
+    context['albumResults'] = albumResults
+
+    return render_template('music_search.html', **context)
+
+@app.route('/user/<username>/friend_search', methods=['GET'])
+def friend_search(username):
+    query = request.args['query']
+    augmented_query = "%" + query + "%"
+
+    cmd = "SELECT username FROM users WHERE username ILIKE %s"
+    cursor = g.conn.execute(cmd, augmented_query)
+    results = []
+    for result in cursor:
+        results.append(result[0])  # can also be accessed using result[0]
+    cursor.close()
+
+    context = dict(results = results)
+    context['query'] = query
+
+    return render_template('friend_search.html', **context)
 
 def valid_login(username):
     cmd = 'SELECT uid FROM Users where name=:name1'
@@ -415,7 +441,6 @@ def login():
 
 @app.route('/user/<username>')
 def profile(username):
-    #username = session['username']
     name = get_name_from_username()
     stations = get_stations_for_user()
     favs = get_song_favs_for_user()
@@ -489,22 +514,22 @@ def signup():
 app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
 
 
-import datetime
-@app.template_filter()
-def datetimefilter(value, format='%Y/%m/%d %H:%M'):
-     """convert a datetime to a different format."""
-     return value.strftime(format)
+# import datetime
+# @app.template_filter()
+# def datetimefilter(value, format='%Y/%m/%d %H:%M'):
+#      """convert a datetime to a different format."""
+#      return value.strftime(format)
 
-app.jinja_env.filters['datetimefilter'] = datetimefilter
+# app.jinja_env.filters['datetimefilter'] = datetimefilter
 
-@app.route("/template")
-def template_test():
-     return render_template('template.html', my_string="Wheeeee!", 
-         my_list=[0,1,2,3,4,5], title="Index", current_time=datetime.datetime.now())
+# @app.route("/template")
+# def template_test():
+#      return render_template('template.html', my_string="Wheeeee!", 
+#          my_list=[0,1,2,3,4,5], title="Index", current_time=datetime.datetime.now())
 
-@app.route("/home")
-def home():
-    return redirect(url_for('profile', username=session['username']))
+# @app.route("/home")
+# def home():
+#     return redirect(url_for('profile', username=session['username']))
 #     #     my_list=[6,7,8,9,10,11], title="Home", current_time=datetime.datetime.now())
 #     return redirect(url_for('profile', username=session['username']))
 
@@ -520,10 +545,10 @@ def signout():
     #     my_list=[6,7,8,9,10,11], title="Home", current_time=datetime.datetime.now())
     return redirect(url_for('logout'))
 
-@app.route("/about")
-def about():
-    return render_template('template.html', my_string="Bar", 
-        my_list=[12,13,14,15,16,17], title="About", current_time=datetime.datetime.now())
+# @app.route("/about")
+# def about():
+#     return render_template('template.html', my_string="Bar", 
+#         my_list=[12,13,14,15,16,17], title="About", current_time=datetime.datetime.now())
 
 # @app.route("/contact")
 # def contact():
