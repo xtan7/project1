@@ -10,6 +10,7 @@
       vertical-align: top;
       border-collapse: collapse;
       border: 1px solid #dddddd;
+      table-layout: auto;
     }
     th{ 
       background-color: #dddddd;
@@ -20,9 +21,12 @@
 
 
 <body>
-<form method="POST" action="/user/<username>/create_album">
-<p>Album Title:<input type="text" name="username" required="required" pattern="[A-Za-z0-9]{1,20}"></p>
-<p>Genre:<input type="text" name="name" required="required" pattern="[A-Za-z0-9]{1,20}"></p>
+<form method="POST" action="/user/{{username}}/create_album">
+<p>Album Title:<input type="text" name="username" required="required"></p>
+<p>Genre:<input type="text" name="name" required="required"></p>
+{% if is_artist!=true %}
+  <p>Stage Name:<input type="text" name="stagename" required="required" pattern="[A-Za-z0-9]{1,20}"></p>
+{% endif %}
 <div style="float: left; width:80%">
 Songs
 <div class="table">
@@ -35,9 +39,8 @@ Songs
   {% for n in range(0,20) %}
     <tr>
       <td>{{n+1}}</td>
-    {% for n in range(0,2) %}
-       <td></td>
-    {% endfor %}
+      <td><input type="text", name=""+{{n+1}}+"name"</td>
+      <td><input type="text", name=""+{{n+1}}+"genre"</td>
     </tr>
   {% endfor %}
 </table>
