@@ -17,6 +17,7 @@ Read about it online.
 """
 
 import os
+import re
 from sqlalchemy import *
 from sqlalchemy.pool import NullPool
 from flask import Flask, session, url_for, request, render_template, g, redirect, Response
@@ -125,7 +126,7 @@ def add_user(username, name, dob):
 
 @app.route('/user/<username>/friends', methods=['GET','POST'])
 def my_friends(username):
-    return render_template('friends.html', name=username)
+    return render_template('friends.html', name=username, now_playing=session['now_playing'])
 
 @app.route('/user/<username>/music', methods=['GET','POST'])
 def music(username):
@@ -181,7 +182,7 @@ def music(username):
     context['stations'] = stations
     context['played'] = played
 
-    return render_template('music.html', **context)
+    return render_template('music.html', now_playing=session['now_playing'], **context)
 
 @app.route('/user/<username>/favorites')
 def favorites(username):
@@ -225,7 +226,7 @@ def favorites(username):
     context['albums'] = albums
     context['stations'] = stations
 
-    return render_template('favorites.html', **context)
+    return render_template('favorites.html', now_playing=session['now_playing'], **context)
 
 @app.route('/user/<username>/create_station', methods=['GET', 'POST'])
 def creation_station(username):
@@ -233,7 +234,7 @@ def creation_station(username):
         stationName = request.form['stationName']
         if stationName == '':
             error = 'Please enter a station name'
-            return render_template('create_station.html', name=username, error=error)
+            return render_template('create_station.html', name=username, now_playing=session['now_playing'], error=error)
         else:
             theme = request.form['theme']
             cmd = "SELECT count(*) FROM create_station AS S, users as U WHERE U.username=%s and S.uid=U.uid"
@@ -250,9 +251,9 @@ def creation_station(username):
             cursor = g.conn.execute(cmd, uid, stationid, stationName, theme)
 
             message = "New Station '" + stationName + "' Created!"
-            return render_template('create_station.html', name=username, message=message)
+            return render_template('create_station.html', name=username, now_playing=session['now_playing'], message=message)
     else:
-        return render_template('create_station.html', name=username)
+        return render_template('create_station.html', name=username, now_playing=session['now_playing'])
 
 @app.route('/user/<username>/music_search', methods=['GET'])
 def music_search(username):
@@ -286,7 +287,7 @@ def music_search(username):
     context['songResults'] = songResults
     context['albumResults'] = albumResults
 
-    return render_template('music_search.html', **context)
+    return render_template('music_search.html', now_playing=session['now_playing'], **context)
 
 @app.route('/user/<username>/friend_search', methods=['GET'])
 def friend_search(username):
@@ -303,7 +304,7 @@ def friend_search(username):
     context = dict(results = results)
     context['query'] = query
 
-    return render_template('friend_search.html', **context)
+    return render_template('friend_search.html', now_playing=session['now_playing'], **context)
 
 def valid_login(username):
     cmd = 'SELECT uid FROM Users where name=:name1'
@@ -430,13 +431,13 @@ def add_artist(stagename):
     username = session['username']
     cmd = "SELECT uid FROM Users where username=:username1"
     cursor = g.conn.execute(text(cmd), username1=username)
-    uid = 0;
+    uid = 0
     for result in cursor:
         print result
-        uid = result
-    cusror.close()
+        uid = result[0]
+    cursor.close()
     cmd2 = "INSERT INTO artist (uid, stagename) VALUES(:uid1, :stagename1)"
-    g.conn.execute(text(cmd), uid1=uid, stagename1=stagename)
+    g.conn.execute(text(cmd2), uid1=uid, stagename1=stagename)
     return get_artist_uid()
 
 def get_artist_uid():
@@ -446,7 +447,7 @@ def get_artist_uid():
     uid = 0
     for result in cursor:
         print result
-        uid = result
+        uid = result[0]
     cursor.close()
     return uid
 
@@ -454,19 +455,40 @@ def add_album(title, genre):
     username = session['username']
     cmd="INSERT INTO album_release (albumid, title, genre, uid, releasedate) VALUES(DEFAULT, :title1, :genre1, :uid1, now())"
     uid = get_artist_uid()
+    print "add_album", title, genre, uid
     g.conn.execute(text(cmd), title1=title, genre1=genre, uid1=uid)
     cmd2= "SELECT albumid FROM album_release WHERE title=:title1"
-    cursor = g.conn.execute(text(cmd), title1=title)
+    cursor = g.conn.execute(text(cmd2), title1=title)
     albumid = 0
     for result in cursor:
-        print result
-        albumid= result
+        albumid= result[0]
+        print "albumid1", albumid
     cursor.close()
     return albumid
 
 def add_song_to_album(name, genre, albumid, uid):
-    cmd="INSERT INTO song (songid, albumid, title, genre, uid) VALUES(DEFAULT, :name1, :genre1, :albumid1, :uid1)"
+    cmd="INSERT INTO song (songid, albumid, title, genre, uid) VALUES(DEFAULT, :albumid1, :name1, :genre1, :uid1)"
     g.conn.execute(text(cmd), name1=name, genre1=genre, albumid1=albumid, uid1=uid)
+
+def get_uid():
+    username = session['username']
+    cmd = "SELECT uid FROM Users WHERE username=:username1"
+    cursor = g.conn.execute(text(cmd), username1=username)
+    uid = 0
+    for result in cursor:
+        uid=result[0]
+    cursor.close()
+    return uid
+
+def add_to_listen(songid):
+    uid = 0
+    uid = get_uid()
+    cmd="INSERT INTO listen (time, uid, songid) VALUES(now(), :uid1, :songid1)"
+    g.conn.execute(text(cmd), uid1=uid, songid1=songid)
+    cmd2 = "SELECT song.title, artist.stagename FROM song, artist WHERE songid=:songid1 AND song.uid=artist.uid"
+    cursor = g.conn.execute(text(cmd2), songid1=songid)
+    for result in cursor:
+        session['now_playing'] =  '"'+result[0]+'" By '+result[1]
     
 
 #ROUTE FUNCTIONS
@@ -483,6 +505,7 @@ def login():
         if valid_login(request.form['username'])==True:
             print 'valid session for ', request.form['username']
             session['username'] = request.form['username']
+            session['now_playing'] = ''
             return redirect(url_for('profile', username=session['username']))
         else:
             error = 'Username not found!'
@@ -493,6 +516,16 @@ def login():
 
 @app.route('/user/<username>')
 def profile(username):
+    tokens = request.full_path.split("=")
+    song = 0
+    for i in tokens:
+       print "tokens", i 
+    if len(tokens)>1:
+        if len(tokens[1])>0:
+            song = int(tokens[1])
+    print "song", song
+    if song!=0:
+        add_to_listen(song)
     name = get_name_from_username()
     stations = get_stations_for_user()
     favs = get_song_favs_for_user()
@@ -500,7 +533,7 @@ def profile(username):
     subs = get_subs()
     for n in stations:
         print n
-    return render_template('user.html', name=name, username=username, stations=stations, favs=favs, friends=friends, subs=subs)
+    return render_template('user.html', name=name, now_playing=session['now_playing'], username=username, stations=stations, favs=favs, friends=friends, subs=subs)
 
 @app.route('/user/<username>/artist', methods=['GET', 'POST'])
 def artist(username):
@@ -511,6 +544,7 @@ def artist(username):
    for i in tokens:
       print "tokens", i 
    albumname = tokens[1]
+   albumname = re.sub(r'[^\w]', ' ', albumname)
    print "albumname", albumname
    albums = get_albums_for_user()
    songs = {}
@@ -522,7 +556,7 @@ def artist(username):
            albumname = albums[i][0]
            songs = get_songs_in_album(albums[i][0])
            break;
-   return render_template('artist.html', username=session['username'], albumname=albumname, albums=albums, songs=songs)
+   return render_template('artist.html', username=session['username'], now_playing=session['now_playing'], albumname=albumname, albums=albums, songs=songs)
 
 @app.route('/user/<username>/create_album', methods=['GET', 'POST'])
 def create_album(username):
@@ -534,23 +568,40 @@ def create_album(username):
             uid = add_artist(request.form['stagename'])
         else:
             uid = get_artist_uid()
+        print "uid", uid
         if uid!=0:
+            print "here"
             albumid=0
             albumid = add_album(request.form['album_title'], request.form['album_genre'])
+            print "albumid", albumid
             if albumid!=0:
+                print "here2"
                 for n in range(1, 21):
-                    if request.form[""+n+"name"]!=None:
-                        add_song_to_album(request.form[""+n+"name"], request.form[""+n+"genre"], albumid, uid)
-        return redirect(url_for('artist', username=session['username']))
+                    print request.form
+                    try:
+                        if request.form["songname"+str(n)]!=None:
+                            print "request.form", "songname"+str(n), request.form["songname"+str(n)]
+                            if len(request.form["songname"+str(n)])>0:
+                                add_song_to_album(request.form["songname"+str(n)], request.form["genre"+str(n)], albumid, uid)
+                    except:
+                        try:
+                            if request.form["songname"+str(n)]!=None:
+                                print "request.form", request.form["songname"+str(n)]
+                                if len(request.form["songname"+str(n)])>0:
+                                    add_song_to_album(request.form["songname"+str(n)], "", albumid, uid)
+                        except:
+                            print str(n)+"name not in form"
+        return redirect(url_for('artist', username=session['username'], albumname=''))
     else:
         is_artist = False
         is_artist = get_artist();
-        return render_template('create_album.html', username=session['username'], is_artist=is_artist)
+        return render_template('create_album.html', username=session['username'], now_playing=session['now_playing'], is_artist=is_artist)
 
 @app.route('/logout', methods=['GET', 'POST'])
 def logout():
     print "logging out"
     session.pop('username', None)
+    session.pop('now_playing', None)
     print "redirecting to login page"
     return redirect(url_for('login'))
 
@@ -573,6 +624,7 @@ def signup():
                 return render_template('signup.html', error =error)
             if add_user(username, name, dob)==True:
                 session['username'] = username
+                session['now_playing'] = ''
                 print session['username']
                 return redirect(url_for('profile', username=session['username']))
             else:

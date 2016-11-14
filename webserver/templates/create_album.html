@@ -22,8 +22,8 @@
 
 <body>
 <form method="POST" action="/user/{{username}}/create_album">
-<p>Album Title:<input type="text" name="username" required="required"></p>
-<p>Genre:<input type="text" name="name" required="required"></p>
+<p>Album Title:<input type="text" name="album_title" required="required"></p>
+<p>Genre:<input type="text" name="album_genre" required="required"></p>
 {% if is_artist!=true %}
   <p>Stage Name:<input type="text" name="stagename" required="required" pattern="[A-Za-z0-9]{1,20}"></p>
 {% endif %}
@@ -36,11 +36,11 @@ Songs
     <th>Name</th>
     <th>Genre</th>
   </tr>
-  {% for n in range(0,20) %}
+  {% for n in range(1,21) %}
     <tr>
-      <td>{{n+1}}</td>
-      <td><input type="text", name=""+{{n+1}}+"name"</td>
-      <td><input type="text", name=""+{{n+1}}+"genre"</td>
+      <td>{{n}}</td>
+      <td><input type="text", name='{{ "songname%s"%(n) }}'</td>
+      <td><input type="text", name='{{ "genre%s"%(n) }}'</td>
     </tr>
   {% endfor %}
 </table>

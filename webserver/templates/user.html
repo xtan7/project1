@@ -70,6 +70,7 @@ Fav Songs
 <div class="table">
 <table >
   <tr>
+    <th></th>
     <th>Name</th>
     <th>Genre</th>
     <th>Album</th>
@@ -77,6 +78,7 @@ Fav Songs
   </tr>
   {% for key, value in favs.iteritems() %}
     <tr>
+      <td><a href="{{ url_for('profile', username=username, song=key) }}">&#9658</a></td>
     {% for n in value %}
       <td>{{n}}</td>
     {% endfor %}
