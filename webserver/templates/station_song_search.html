@@ -1,0 +1,59 @@
+<html>
+  <style>
+    body{ 
+      font-size: 15pt;
+      font-family: arial;
+    }
+    table, th, td{
+      text-align: left;
+      vertical-align: top;
+      border-collapse: collapse;
+      border: 1px solid #dddddd;
+    }
+    th{ 
+      background-color: #dddddd;
+    }
+  </style>
+{% extends "layout.html" %}
+{% block content %}
+
+<body>
+  <h1>
+    Add songs to "{{stationName}}"
+  </h1>
+
+<form method="POST" action="/user/{{name}}/station/{{stationName}}">
+<input type="submit" value="Back to station">
+</form>
+
+<p><font size=3>Search results for '{{query}}':</font></p>
+<div style="float: left; width:50%; margin-right:20px">
+<div class="table">
+<table >
+  <tr>
+    <th>Name</th>
+    <th>Genre</th>
+    <th>Album</th>
+    <th>Artist</th>
+  </tr>
+  {% for key, value in songs.iteritems() %}
+    <tr>
+      <td>
+        <form method="POST" action="/user/{{name}}/add_to_station/{{stationName}}/{{key}}">
+          {{value[0]}} <input type="image" src="http://img.freepik.com/free-icon/add-interface-circular-symbol-with-plus-sign_318-67290.jpg?size=338&ext=jpg" alt="Submit" width="15" height="15">
+        </form>
+      </td>
+      {% for n in value[1:] %}
+      <td>{{n}}</td>
+      {% endfor %}
+    </tr>
+  {% endfor %}
+</table>
+</div>
+
+
+
+{% endblock %}
+
+
+</html>

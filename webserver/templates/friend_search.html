@@ -20,17 +20,36 @@
 <body>
   <h1>Search results matching '{{query}}'</h1>
 
-<table>
+<!-- <table>
   <tr>
     <th>Username</th>
     <th>Name</th>
   </tr>
   {% for n in results %}
     <tr>
-      <td>{{i}}</td>
+      <td>{{n}}</td>
+    </tr>
+  {% endfor %}
+</table> -->
+<div style="float: left; width:40%; margin-right:20px">
+<div class="table">
+<table style="width:40%">
+  <tr>
+    <th>Username</th>
+    <th>Name</th>
+  </tr>
+  {% for key, value in results.iteritems() %}
+    <tr>
+     <td><form action="/user/{{name}}/friends">
+        <input type="image" src="http://img.freepik.com/free-icon/add-interface-circular-symbol-with-plus-sign_318-67290.jpg?size=338&ext=jpg" alt="Submit" width="10" height="10">  {{key}}
+      </form>
+     </td>
+     <td>{{value}}</td>
     </tr>
   {% endfor %}
 </table>
+</div>
+</div>
 
 <br>
 <br>
