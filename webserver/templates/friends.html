@@ -6,18 +6,41 @@
     }
     table, th, td{
       text-align: left;
+      vertical-align: top;
+      border-collapse: collapse;
+      border: 1px solid #dddddd;
+    }
+    th{ 
+      background-color: #dddddd;
     }
   </style>
 {% extends "layout.html" %}
 {% block content %}
 
 <body>
-
-<p><b>Current Friends:</b></p>
-
 <form method="GET" action="/user/{{name}}/friend_search">
 <p>Search for new friends: <input type="search" name="query" required="required"> <input type="submit" value="Search by Username"></p>
 </form>
+
+<p><b>Current Friends:</b></p>
+<div class="table">
+<table>
+  <tr>
+    <th>Name</th>
+    <th></th>
+  </tr>
+  {% for key, value in friends.iteritems() %}
+    <tr>
+     <td>{{value[0]}}</td>
+     {% if value[1] == True %}
+       <td><img src="http://www.freeiconspng.com/uploads/heart-icon-14.png" alt="friend" style="width:15px;height:15px;"></td>
+     {% else %}
+       <td><img src="http://www.freeiconspng.com/uploads/heart-outline-19.png" alt="not friend" style="width:15px:height:15px;"></td>
+     {% endif %}
+    </tr>
+  {% endfor %}
+</table>
+
 
 
 </body>

@@ -49,13 +49,19 @@ Stations
 <table >
   <tr>
     <th>Name</th>
-    <th>Genre</th>
+    <th>Theme</th>
   </tr>
   {% for key, value in stations.iteritems() %}
     <tr>
-    {% for n in value %}
+<!--     {% for n in value %}
        <td>{{n}}</td>
-    {% endfor %}
+    {% endfor %} -->
+    <td>
+        <form method="POST" action="/user/{{name}}/station/{{value[0]}}">
+          {{value[0]}}  <input type="image" src="https://image.freepik.com/free-icon/edit-interface-symbol-of-a-pencil-on-a-square-outline-paper_318-61160.jpg" alt="Submit" width="15" height="15">
+        </form>
+    </td>
+    <td>{{value[1]}}</td>
     </tr>
   {% endfor %}
 </table>

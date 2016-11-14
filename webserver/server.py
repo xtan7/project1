@@ -126,15 +126,13 @@ def add_user(username, name, dob):
 
 @app.route('/user/<username>/friends', methods=['GET','POST'])
 def my_friends(username):
-    return render_template('friends.html', name=username, now_playing=session['now_playing'])
+    friends = get_friends()
+    return render_template('friends.html', name=username, friends=friends, now_playing=session['now_playing'])
 
 @app.route('/user/<username>/music', methods=['GET','POST'])
 def music(username):
     # Find uid
-    cmd = "SELECT uid FROM users WHERE users.username=%s"
-    cursor = g.conn.execute(cmd, username)
-    result = cursor.first()
-    uid = result[0]
+    uid = get_user_uid()
 
     cursor = g.conn.execute("SELECT stagename FROM artist ORDER BY stagename LIMIT 10")
     artists = []
@@ -187,10 +185,7 @@ def music(username):
 @app.route('/user/<username>/favorites')
 def favorites(username):
     # Find uid
-    cmd = "SELECT uid FROM users WHERE users.username=%s"
-    cursor = g.conn.execute(cmd, username)
-    result = cursor.first()
-    uid = result[0]
+    uid = get_user_uid()
 
     cmd = "SELECT A.stagename FROM artist AS A, subscription as S WHERE S.uid1=%s and S.uid2=A.uid LIMIT 10"
     cursor = g.conn.execute(cmd, uid)
@@ -234,6 +229,9 @@ def creation_station(username):
         stationName = request.form['stationName']
         if stationName == '':
             error = 'Please enter a station name'
+            return render_template('create_station.html', name=username, now_playing=session['now_playing'], error=error)
+        elif station_exists(stationName):
+            error = 'Station Name already exists'
             return render_template('create_station.html', name=username, now_playing=session['now_playing'], error=error)
         else:
             theme = request.form['theme']
@@ -294,17 +292,91 @@ def friend_search(username):
     query = request.args['query']
     augmented_query = "%" + query + "%"
 
-    cmd = "SELECT username FROM users WHERE username ILIKE %s"
+    cmd = "SELECT username, name FROM users WHERE username ILIKE %s"
     cursor = g.conn.execute(cmd, augmented_query)
-    results = []
+    results = {}
     for result in cursor:
-        results.append(result[0])  # can also be accessed using result[0]
+        results[result[0]] = result[1]
     cursor.close()
 
     context = dict(results = results)
     context['query'] = query
+    context['name'] = username
 
     return render_template('friend_search.html', now_playing=session['now_playing'], **context)
+
+@app.route('/user/<username>/station/<stationName>', methods=["GET","POST"])
+def station_page(username, stationName):
+    uid = get_user_uid()
+    cmd = "SELECT theme FROM create_station WHERE uid=%s and name=%s"
+    cursor = g.conn.execute(cmd, uid, stationName)
+    theme = cursor.first()
+    theme = theme[0]
+    if theme == '' or theme == None:
+        theme = 'no theme'
+
+    stationid = get_station_id(uid, stationName)
+    songs = get_songs_in_station(uid, stationid)
+
+    context = dict(stationName = stationName)
+    context['theme'] = theme
+    context['songs'] = songs
+    context['name'] = username
+    return render_template('station.html', **context)
+
+@app.route('/user/<username>/delete_station/<stationName>', methods=["POST"])
+def delete_station(username, stationName):
+    uid = get_user_uid()
+    cmd = "DELETE FROM create_station WHERE uid=%s and name=%s"
+    try:
+        g.conn.execute(cmd, uid, stationName)
+    except:
+        print 'problem executing command'
+
+    return redirect(url_for('profile', username=username))
+
+@app.route('/user/<username>/station/<stationName>/search', methods=['GET'])
+def station_music_search(username, stationName):
+    query = request.args['query']
+    augmented_query = "%" + query + "%"
+
+    cmd = "SELECT S.songid, S.title, S.genre, A.title, artist.stagename FROM song as S, album_release AS A, artist WHERE (artist.stagename ILIKE %s or S.title ILIKE %s or A.title ILIKE %s) and S.albumid=A.albumid and artist.uid=A.uid LIMIT 100"
+    cursor = g.conn.execute(cmd, augmented_query, augmented_query, augmented_query)
+    songs = {}
+    for result in cursor:
+        songs[result[0]] = [result[1], result[2], result[3], result[4]]
+    cursor.close()
+
+    context = dict(stationName = stationName)
+    context['songs'] = songs
+    context['name'] = username
+    context['query'] = query
+
+    return render_template('station_song_search.html', **context)
+
+@app.route('/user/<username>/add_to_station/<stationName>/<songid>', methods=["POST"])
+def add_to_station(username, stationName, songid):
+    uid = get_user_uid()
+    stationid = get_station_id(uid, stationName)
+    cmd = "INSERT INTO add_to_station (stationid, uid, songid) VALUES (%s, %s, %s)"
+    try:
+        g.conn.execute(cmd, (stationid, uid, songid))
+    except:
+        print 'problem adding song to station'
+
+    return redirect(url_for('station_page', username=username, stationName=stationName))
+
+@app.route('/user/<username>/remove_from_station/<stationName>/<songid>', methods=["POST"])
+def remove_from_station(username, stationName, songid):
+    uid = get_user_uid()
+    stationid = get_station_id(uid, stationName)
+    cmd = "DELETE FROM add_to_station WHERE stationid=%s and uid=%s and songid=%s"
+    try:
+        g.conn.execute(cmd, (stationid, uid, songid))
+    except:
+        print 'problem adding song to station'
+
+    return redirect(url_for('station_page', username=username, stationName=stationName))
 
 def valid_login(username):
     cmd = 'SELECT uid FROM Users where name=:name1'
@@ -332,9 +404,39 @@ def username_exists(username):
     print 'username doesnt exist', username
     return False
 
+def station_exists(stationName):
+    user_stations = get_stations_for_user()
+    for v in user_stations.itervalues():
+        if v[0] == stationName:
+            return True
+    return False
+
 
 #AFTER LOGIN - use session username
 ########################################
+def get_user_uid():
+    username = session['username']
+    cmd = "SELECT uid FROM users WHERE users.username=%s"
+    cursor = g.conn.execute(cmd, username)
+    result = cursor.first()
+    return result[0]
+
+def get_station_id(uid, stationName):
+    cmd = "SELECT stationid FROM create_station WHERE uid=%s and name=%s"
+    cursor = g.conn.execute(cmd, (uid, stationName))
+    result = cursor.first()
+    return result[0]
+
+def get_songs_in_station(uid, stationid):
+    cmd = "SELECT S.songid, S.title, S.genre, A.title, artist.stagename FROM song as S, album_release AS A, artist, add_to_station AS station WHERE station.uid=%s and station.stationid=%s and S.songid=station.songid and S.albumid=A.albumid and artist.uid=A.uid"
+    cursor = g.conn.execute(cmd, (uid, stationid))
+    songs = {}
+    for result in cursor:
+        songs[result[0]] = [result[1], result[2], result[3], result[4]]
+    cursor.close()
+    return songs
+
+
 def get_stations_for_user():
     username = session['username']
     cmd = 'SELECT create_station.stationid, create_station.name, create_station.theme FROM create_station, Users WHERE Users.username=:username1 AND Users.uid=create_station.uid'
