@@ -18,38 +18,33 @@
 {% block content %}
 
 <body>
-  <h1>Search results matching '{{query}}'</h1>
+  <h1>Album search results matching '{{query}}'</h1>
 
-<div style="float: left; width:50%; margin-right:20px">
+<div style="float: left; width:30%; margin-right:20px">
 <div class="table">
 <table >
   <tr>
     <th></th>
-    <th></th>
-    <th>Name</th>
-    <th>Genre</th>
-    <th>Album</th>
+    <th>Title</th>
     <th>Artist</th>
+    <th>Genre</th>
   </tr>
-  {% for key, value in songs.iteritems() %}
+  {% for key, value in albums.iteritems() %}
     <tr>
       <td>
-        <form method="POST" action="/user/{{name}}/add_song_to_favorites/{{key}}">
+        <form method="POST" action="/user/{{name}}/add_album_to_favorites/{{key}}">
         <input type="image" src="http://www.clipartbest.com/cliparts/Rid/Mr7/RidMr74i9.png" alt="Submit" width="15" height="15">
         </form>
       </td>
-      <td><a href="{{ url_for('profile', username=username, song=key) }}">&#9658</a></td>
-      {% for n in value %}
+    {% for n in value %}
       <td>{{n}}</td>
-      {% endfor %}
+    {% endfor %}
     </tr>
   {% endfor %}
 </table>
 </div>
 </div>
 
-<br>
-<br>
 </body>
 {% endblock %}
 

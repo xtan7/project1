@@ -1,0 +1,51 @@
+<html>
+  <style>
+    body{ 
+      font-size: 15pt;
+      font-family: arial;
+    }
+    table, th, td{
+      text-align: left;
+      vertical-align: top;
+      border-collapse: collapse;
+      border: 1px solid #dddddd;
+    }
+    th{ 
+      background-color: #dddddd;
+    }
+  </style>
+{% extends "layout.html" %}
+{% block content %}
+
+
+<body>
+  
+<form method="GET" action="/user/{{name}}/subscription/artist_search">
+<p>Artist search: <input type="search" name="query" required="required"> <input type="submit" value="Search"></p>
+</form>
+
+<p><b>Current Subscriptions</b></p>
+<div style="float: left; width:30%; margin-right:20px">
+<div class="table">
+<table>
+  <tr>
+    <th>Name</th>
+    <th></th>
+  </tr>
+  {% for key, value in subs.iteritems() %}
+    <tr>
+      <td>{{value[0]}}</td>
+      <td><form method="POST" action="/user/{{name}}/delete_sub/{{key}}">
+           <input type="image" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTpleU6K18c3mJQxq8NI1bmRwpMZ5gtUgGZVWypV9Psc64ENr07" alt="Submit" width="15" height="15">
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+</table>
+</div>
+</div>
+
+</body>
+{% endblock %}
+
+</html>

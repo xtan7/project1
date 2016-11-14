@@ -33,6 +33,7 @@
     <th>Genre</th>
     <th>Album</th>
     <th>Artist</th>
+    <th></th>
   </tr>
   <!-- {% for key, value in songs.iteritems() %}
     <tr>
@@ -43,21 +44,21 @@
   {% endfor %} -->
   {% for key, value in songs.iteritems() %}
     <tr>
-      <td>
-        <form method="POST" action="/user/{{name}}/remove_from_station/{{stationName}}/{{key}}">
-          {{value[0]}} <input type="image" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTpleU6K18c3mJQxq8NI1bmRwpMZ5gtUgGZVWypV9Psc64ENr07" alt="Submit" width="15" height="15">
-        </form>
-      </td>
-      {% for n in value[1:] %}
+      {% for n in value %}
       <td>{{n}}</td>
       {% endfor %}
+      <td>
+        <form method="POST" action="/user/{{name}}/remove_from_station/{{stationName}}/{{key}}">
+          <input type="image" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTpleU6K18c3mJQxq8NI1bmRwpMZ5gtUgGZVWypV9Psc64ENr07" alt="Submit" width="15" height="15">
+        </form>
+      </td>
     </tr>
   {% endfor %}
 </table>
 </div>
 
 <form method="GET" action="/user/{{name}}/station/{{stationName}}/search">
-<p>Search songs: <input type="search" name="query" required="required"> <input type="submit" value="Search"></p>
+<p>Search songs to add: <input type="search" name="query" required="required"> <input type="submit" value="Search"></p>
 </form>
 </body>
 {% endblock %}

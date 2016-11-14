@@ -19,7 +19,7 @@
 
 
 <body>
-  <h1>Music Library</h1>
+  <h1>{{name}}'s Music Library</h1>
 
 <form action="/user/{{name}}/create_station">
 <input type="image" src="http://img.freepik.com/free-icon/add-interface-circular-symbol-with-plus-sign_318-67290.jpg?size=338&ext=jpg" alt="Submit" width="30" height="30">
@@ -27,72 +27,78 @@ Click to create new station.
 </form>
 
 <form method="GET" action="/user/{{name}}/music_search">
-<p>Quick Search: <input type="search" name="query" required="required"> <input type="submit" value="Search"></p>
+<p>Quick Song Search: <input type="search" name="query" required="required"> <input type="submit" value="Search"></p>
 </form>
 
 
-<p>
-  <b>{{name}}'s Music:</b>
-</p>
-<table style="width:75%">
+
+
+<div style="float: left; width:40%; margin-right:20px">
+<p><b>Most Recently Played:</b></p>
+<div class="table">
+<table >
   <tr>
-    <th>Recently Played <br>
-      (showing last 10 played songs)</th>
-    <th>My Stations</th>
+    <th></th>
+    <th></th>
+    <th>Name</th>
+    <th>Artist</th>
   </tr>
-  <tr>
-    <td>
-      {% for n in played %}
-      <div>"{{n}}"</div>
+  {% for value in recentlyPlayed %}
+    <tr>
+      <td>
+        <form method="POST" action="/user/{{name}}/add_song_to_favorites/{{value[0]}}">
+        <input type="image" src="http://www.clipartbest.com/cliparts/Rid/Mr7/RidMr74i9.png" alt="Submit" width="15" height="15">
+        </form>
+      </td>
+      <td><a href="{{ url_for('profile', username=username, song=value[0]) }}">&#9658</a></td>
+      {% for n in value[1:] %}
+      <td>{{n}}</td>
       {% endfor %}
-    </td>
-    <td>
-      {% for n in stations %}
-      <div>"{{n}}"</div>
-      {% endfor %}
-    </td>
-    
-  </tr>
+    </tr>
+  {% endfor %}
 </table>
+</div>
+</div>
+
+
+<div style="float: left; width:40%; margin-right:20px">
+<p><b>Most Popular (over last 6 months):</b></p>
+<div class="table">
+<table >
+  <tr>
+    <th></th>
+    <th></th>
+    <th>Name</th>
+    <th>Artist</th>
+  </tr>
+  {% for value in mostPopular %}
+    <tr>
+      <td>
+        <form method="POST" action="/user/{{name}}/add_song_to_favorites/{{value[0]}}">
+        <input type="image" src="http://www.clipartbest.com/cliparts/Rid/Mr7/RidMr74i9.png" alt="Submit" width="15" height="15">
+        </form>
+      </td>
+      <td><a href="{{ url_for('profile', username=username, song=value[0]) }}">&#9658</a></td>
+      {% for n in value[1:] %}
+      <td>{{n}}</td>
+      {% endfor %}
+    </tr>
+  {% endfor %}
+</table>
+</div>
+</div>
 
 <p>
-  <br>
   <b>Search by:</b><br>
-  <font size=2><i>Showing first 10 results</i></font>
 </p>
-<table style="width:75%">
-  <tr>
-    <th>Artist</th>
-    <th>Popular Songs (over last 6 months)</th> 
-    <th>Album</th> 
-    <th>Genre</th>
-  </tr>
-  <tr>
-    <td>
-      {% for n in artists %}
-      <div>{{n}}</div>
-      {% endfor %}
-    </td>
-    <td>
-      {% for n in songs %}
-      <div>"{{n}}"</div>
-      {% endfor %}
-    </td>
-    <td>
-      {% for n in albums %}
-      <div><i>{{n}}</i></div>
-      {% endfor %}
-    </td>
-    <td>
-      {% for n in genres %}
-      <div>{{n}}</div>
-      {% endfor %}
-    </td>
-    
-  </tr>
-</table>
-<br>
-<br>
+<form method="GET" action="/user/{{name}}/album_search">
+<p>Album: <input type="search" name="query" required="required"> <input type="submit" value="Search Albums"></p>
+</form>
+<form method="GET" action="/user/{{name}}/station_search">
+<p>Station: <input type="search" name="query" required="required"> <input type="submit" value="Search Stations"></p>
+</form>
+
+
 </body>
 {% endblock %}
 

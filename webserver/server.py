@@ -124,61 +124,30 @@ def add_user(username, name, dob):
         return False
     return True
 
-@app.route('/user/<username>/friends', methods=['GET','POST'])
-def my_friends(username):
-    friends = get_friends()
-    return render_template('friends.html', name=username, friends=friends, now_playing=session['now_playing'])
-
 @app.route('/user/<username>/music', methods=['GET','POST'])
 def music(username):
-    # Find uid
     uid = get_user_uid()
 
-    cursor = g.conn.execute("SELECT stagename FROM artist ORDER BY stagename LIMIT 10")
-    artists = []
+    cmd = "WITH popular AS (SELECT song.songid, song.title, COUNT(song.songid) AS playCount FROM song, listen WHERE song.songid=listen.songid AND listen.time>(NOW()-interval '6 month') GROUP BY song.songid ORDER BY playCount DESC LIMIT 10) "\
+            "SELECT popular.songid, popular.title, artist.stagename, popular.playCount FROM popular, artist, song WHERE popular.songid=song.songid and song.uid=artist.uid ORDER BY popular.playCount DESC"
+    cursor = g.conn.execute(cmd)
+    mostPopular = []
     for result in cursor:
-        artists.append(result[0])  # can also be accessed using result[0]
+        mostPopular.append((result[0], result[1], result[2]))
     cursor.close()
 
-    cursor = g.conn.execute("select song.title, count(song.songid) AS playCount from song, listen WHERE song.songid=listen.songid AND listen.time>(NOW()-interval '6 month') GROUP BY song.songid ORDER BY playCount DESC LIMIT 10")
-    songs = []
-    for result in cursor:
-        songs.append(result[0])  # can also be accessed using result[0]
-    cursor.close()
-
-    cursor = g.conn.execute("(SELECT distinct(genre) FROM song ORDER BY GENRE LIMIT 5) UNION (SELECT distinct(genre) FROM album_release ORDER BY GENRE LIMIT 5)")
-    genres = []
-    for result in cursor:
-        genres.append(result[0])  # can also be accessed using result[0]
-    cursor.close()
-
-    cursor = g.conn.execute("SELECT title FROM album_release ORDER BY title LIMIT 10")
-    albums = []
-    for result in cursor:
-        albums.append(result[0])  # can also be accessed using result[0]
-    cursor.close()
-
-    cmd = "SELECT S.name FROM create_station AS S WHERE S.uid=%s LIMIT 10"
+    cmd = "WITH recent AS (SELECT DISTINCT S.songid, S.title, MAX(L.time) AS time FROM song AS S, listen AS L WHERE L.uid=%s and S.songid=L.songid " \
+            "GROUP BY S.songid, S.title ORDER BY MAX(L.time) DESC LIMIT 10) SELECT recent.songid, recent.title, artist.stagename, recent.time FROM recent, artist, song "\
+            "WHERE recent.songid=song.songid and song.uid=artist.uid ORDER BY recent.time DESC"
     cursor = g.conn.execute(cmd, uid)
-    stations = []
+    recentlyPlayed = []
     for result in cursor:
-        stations.append(result[0])  # can also be accessed using result[0]
-    cursor.close()
-
-    cmd = "SELECT DISTINCT S.title, MAX(L.time) FROM song AS S, listen AS L WHERE L.uid=%s and S.songid=L.songid GROUP BY S.title ORDER BY MAX(L.time) DESC LIMIT 10"
-    cursor = g.conn.execute(cmd, uid)
-    played = []
-    for result in cursor:
-        played.append(result[0])  # can also be accessed using result[0]
+        recentlyPlayed.append((result[0], result[1], result[2]))
     cursor.close()
 
     context = dict(name = username)
-    context['artists'] = artists
-    context['songs'] = songs
-    context['genres'] = genres
-    context['albums'] = albums
-    context['stations'] = stations
-    context['played'] = played
+    context['mostPopular'] = mostPopular
+    context['recentlyPlayed'] = recentlyPlayed
 
     return render_template('music.html', now_playing=session['now_playing'], **context)
 
@@ -187,36 +156,11 @@ def favorites(username):
     # Find uid
     uid = get_user_uid()
 
-    cmd = "SELECT A.stagename FROM artist AS A, subscription as S WHERE S.uid1=%s and S.uid2=A.uid LIMIT 10"
-    cursor = g.conn.execute(cmd, uid)
-    artists = []
-    for result in cursor:
-        artists.append(result[0])  # can also be accessed using result[0]
-    cursor.close()
-
-    cmd = "SELECT S.title FROM song_favorites AS fav, song as S WHERE fav.uid=%s and S.songid=fav.songid LIMIT 10"
-    cursor = g.conn.execute(cmd, uid)
-    songs = []
-    for result in cursor:
-        songs.append(result[0])  # can also be accessed using result[0]
-    cursor.close()
-
-    cmd = "SELECT A.title FROM album_favorites AS fav, album_release as A WHERE fav.uid=%s and A.albumid=fav.albumid LIMIT 10"
-    cursor = g.conn.execute(cmd, uid)
-    albums = []
-    for result in cursor:
-        albums.append(result[0])  # can also be accessed using result[0]
-    cursor.close()
-
-    cmd = "SELECT S.name FROM station_favorites AS fav, create_station as S WHERE fav.uid=%s and S.stationid=fav.stationid and S.uid=fav.stationauthorid LIMIT 10"
-    cursor = g.conn.execute(cmd, uid)
-    stations = []
-    for result in cursor:
-        stations.append(result[0])  # can also be accessed using result[0]
-    cursor.close()
+    songs = get_song_favs_for_user()
+    albums =  get_album_favs_for_user()
+    stations = get_station_favs_for_user()
 
     context = dict(name = username)
-    context['artists'] = artists
     context['songs'] = songs
     context['albums'] = albums
     context['stations'] = stations
@@ -246,9 +190,13 @@ def creation_station(username):
             uid = result[0]
             
             cmd = "INSERT INTO create_station VALUES(now(), %s, %s, %s, %s)"
-            cursor = g.conn.execute(cmd, uid, stationid, stationName, theme)
+            try:
+                cursor = g.conn.execute(cmd, uid, stationid, stationName, theme)
+                message = "New Station '" + stationName + "' Created!"
+            except:
+                print "problem creating station"
+                message = "problem creating station"
 
-            message = "New Station '" + stationName + "' Created!"
             return render_template('create_station.html', name=username, now_playing=session['now_playing'], message=message)
     else:
         return render_template('create_station.html', name=username, now_playing=session['now_playing'])
@@ -258,52 +206,57 @@ def music_search(username):
     query = request.args['query']
     augmented_query = "%" + query + "%"
 
-    cmd = "SELECT stagename FROM artist WHERE stagename ILIKE %s"
-    cursor = g.conn.execute(cmd, augmented_query)
-    artistResults = []
+    cmd = "SELECT S.songid, S.title, S.genre, A.title, artist.stagename FROM song as S, album_release AS A, artist WHERE (artist.stagename ILIKE %s or S.title ILIKE %s or A.title ILIKE %s or S.genre ILIKE %s) and S.albumid=A.albumid and artist.uid=A.uid LIMIT 200"
+    cursor = g.conn.execute(cmd, augmented_query, augmented_query, augmented_query, augmented_query)
+    songs = {}
     for result in cursor:
-        artistResults.append(result[0])  # can also be accessed using result[0]
+        songs[result[0]] = [result[1], result[2], result[3], result[4]]
     cursor.close()
 
-    cmd = "SELECT title FROM song WHERE title ILIKE %s"
-    cursor = g.conn.execute(cmd, augmented_query)
-    songResults = []
-    for result in cursor:
-        songResults.append(result[0])  # can also be accessed using result[0]
-    cursor.close()
-
-    cmd = "SELECT album_release.title FROM album_release WHERE title ILIKE %s"
-    cursor = g.conn.execute(cmd, augmented_query)
-    albumResults = []
-    for result in cursor:
-        print result
-        albumResults.append(result[0])  # can also be accessed using result[0]
-    cursor.close()
-
-    context = dict(artistResults = artistResults)
-    context['query'] = query
-    context['songResults'] = songResults
-    context['albumResults'] = albumResults
-
-    return render_template('music_search.html', now_playing=session['now_playing'], **context)
-
-@app.route('/user/<username>/friend_search', methods=['GET'])
-def friend_search(username):
-    query = request.args['query']
-    augmented_query = "%" + query + "%"
-
-    cmd = "SELECT username, name FROM users WHERE username ILIKE %s"
-    cursor = g.conn.execute(cmd, augmented_query)
-    results = {}
-    for result in cursor:
-        results[result[0]] = result[1]
-    cursor.close()
-
-    context = dict(results = results)
+    context = dict(songs = songs)
     context['query'] = query
     context['name'] = username
 
-    return render_template('friend_search.html', now_playing=session['now_playing'], **context)
+    return render_template('music_search.html', now_playing=session['now_playing'], **context)
+
+@app.route('/user/<username>/album_search', methods=['GET'])
+def album_search(username):
+    query = request.args['query']
+    augmented_query = "%" + query + "%"
+
+    cmd = "SELECT album_release.albumid, album_release.title, artist.stagename, album_release.genre FROM album_release, artist WHERE (album_release.title ILIKE %s or artist.stagename ILIKE %s) and artist.uid=album_release.uid LIMIT 200"
+    cursor = g.conn.execute(cmd, augmented_query, augmented_query)
+    albums = {}
+    for result in cursor:
+        albums[result[0]] = [result[1], result[2], result[3]]
+    cursor.close()
+
+    context = dict(albums = albums)
+    context['query'] = query
+    context['name'] = username
+
+    return render_template('album_search.html', now_playing=session['now_playing'], **context)
+
+
+@app.route('/user/<username>/station_search', methods=['GET'])
+def station_search(username):
+    query = request.args['query']
+    augmented_query = "%" + query + "%"
+
+    cmd = "SELECT create_station.uid, create_station.stationid, create_station.name, create_station.theme, users.username FROM create_station, users WHERE (create_station.name ILIKE %s or users.username ILIKE %s or create_station.theme ILIKE %s) and users.uid=create_station.uid LIMIT 200"
+    cursor = g.conn.execute(cmd, augmented_query, augmented_query, augmented_query)
+    stations = {}
+    for result in cursor:
+        print result
+        stations[(result[0],result[1])] = [result[2], result[3], result[4]]
+    cursor.close()
+
+    context = dict(stations = stations)
+    context['query'] = query
+    context['name'] = username
+
+    return render_template('station_search.html', now_playing=session['now_playing'], **context)
+
 
 @app.route('/user/<username>/station/<stationName>', methods=["GET","POST"])
 def station_page(username, stationName):
@@ -322,6 +275,7 @@ def station_page(username, stationName):
     context['theme'] = theme
     context['songs'] = songs
     context['name'] = username
+    context['now_playing'] = session['now_playing']
     return render_template('station.html', **context)
 
 @app.route('/user/<username>/delete_station/<stationName>', methods=["POST"])
@@ -335,13 +289,24 @@ def delete_station(username, stationName):
 
     return redirect(url_for('profile', username=username))
 
+@app.route('/user/<username>/delete_sub/<artistuid>', methods=["POST"])
+def delete_sub(username, artistuid):
+    uid = get_user_uid()
+    cmd = "DELETE FROM subscription WHERE uid1=%s and uid2=%s"
+    try:
+        g.conn.execute(cmd, uid, artistuid)
+    except:
+        print 'problem deleting subscription'
+
+    return redirect(url_for('subscription', username=username))
+
 @app.route('/user/<username>/station/<stationName>/search', methods=['GET'])
 def station_music_search(username, stationName):
     query = request.args['query']
     augmented_query = "%" + query + "%"
 
-    cmd = "SELECT S.songid, S.title, S.genre, A.title, artist.stagename FROM song as S, album_release AS A, artist WHERE (artist.stagename ILIKE %s or S.title ILIKE %s or A.title ILIKE %s) and S.albumid=A.albumid and artist.uid=A.uid LIMIT 100"
-    cursor = g.conn.execute(cmd, augmented_query, augmented_query, augmented_query)
+    cmd = "SELECT S.songid, S.title, S.genre, A.title, artist.stagename FROM song as S, album_release AS A, artist WHERE (artist.stagename ILIKE %s or S.title ILIKE %s or A.title ILIKE %s or S.genre ILIKE %s) and S.albumid=A.albumid and artist.uid=A.uid LIMIT 200"
+    cursor = g.conn.execute(cmd, augmented_query, augmented_query, augmented_query, augmented_query)
     songs = {}
     for result in cursor:
         songs[result[0]] = [result[1], result[2], result[3], result[4]]
@@ -351,6 +316,7 @@ def station_music_search(username, stationName):
     context['songs'] = songs
     context['name'] = username
     context['query'] = query
+    context['now_playing'] = session['now_playing']
 
     return render_template('station_song_search.html', **context)
 
@@ -377,6 +343,177 @@ def remove_from_station(username, stationName, songid):
         print 'problem adding song to station'
 
     return redirect(url_for('station_page', username=username, stationName=stationName))
+
+@app.route('/user/<username>/friends', methods=['GET','POST'])
+def my_friends(username):
+    friends = get_friends()
+    friend_requests_sent = get_friend_requests_sent()
+    friend_requests_received = get_friend_requests_received()
+
+    context = dict(friend_requests_received = friend_requests_received)
+    context['friend_requests_sent'] = friend_requests_sent
+    context['name'] = username
+    context['friends'] = friends
+    context['now_playing'] = session['now_playing']
+    return render_template('friends.html', **context)
+
+@app.route('/user/<username>/friend_search', methods=['GET'])
+def friend_search(username):
+    query = request.args['query']
+    augmented_query = "%" + query + "%"
+    current_friends = get_friends()
+
+    cmd = "SELECT username, name, uid FROM users WHERE username ILIKE %s and username<>%s"
+    cursor = g.conn.execute(cmd, augmented_query, username)
+    results = {}
+    for result in cursor:
+        if result[2] not in current_friends.keys():
+            results[result[0]] = result[1]
+    cursor.close()
+
+    context = dict(results = results)
+    context['query'] = query
+    context['name'] = username
+
+    return render_template('friend_search.html', now_playing=session['now_playing'], **context)
+
+@app.route('/user/<username>/add_friend/<toUsername>', methods=["POST"])
+def send_friend_request(username, toUsername):
+    uid1 = get_user_uid()
+    cmd = "SELECT uid FROM users WHERE users.username=%s"
+    cursor = g.conn.execute(cmd, toUsername)
+    result = cursor.first()
+    uid2 = result[0]
+
+    cmd = "INSERT INTO friend (uid1, uid2, isfriend) VALUES (%s, %s, FALSE)"
+    try:
+        g.conn.execute(cmd, (uid1, uid2))
+    except:
+        print 'problem adding friend'
+
+    return redirect(url_for('my_friends', username=username))
+
+@app.route('/user/<username>/accept_request/<fromUsername>', methods=["POST"])
+def accept_friend_request(username, fromUsername):
+    uid2 = get_user_uid()
+    cmd = "SELECT uid FROM users WHERE users.username=%s"
+    cursor = g.conn.execute(cmd, fromUsername)
+    result = cursor.first()
+    uid1 = result[0]
+
+    cmd = "UPDATE friend SET isfriend=TRUE WHERE uid1=%s and uid2=%s"
+    try:
+        g.conn.execute(cmd, (uid1, uid2))
+    except:
+        print 'problem adding friend'
+
+    return redirect(url_for('my_friends', username=username))
+
+
+@app.route('/user/<username>/subscription')
+def subscription(username):
+    subs = get_subs()
+    context = dict(name=username)
+    context['subs'] = subs
+    return render_template('subscription.html', **context)
+
+@app.route('/user/<username>/subscription/artist_search', methods=['GET'])
+def artist_search(username):
+    query = request.args['query']
+    augmented_query = "%" + query + "%"
+
+    cmd = "SELECT artist.stagename, artist.uid FROM artist WHERE artist.stagename ILIKE %s LIMIT 100"
+    cursor = g.conn.execute(cmd, augmented_query)
+    results = {}
+    for result in cursor:
+        results[result[1]] = result[0]
+    cursor.close()
+
+    context = dict(results = results)
+    context['name'] = username
+    context['query'] = query
+    context['now_playing'] = session['now_playing']
+
+    return render_template('artist_search.html', **context)
+
+
+@app.route('/user/<username>/subscribe/<artistid>', methods=["POST"])
+def subscribe(username, artistid):
+    uid = get_user_uid()
+    cmd = "INSERT INTO subscription (uid1, uid2, since) VALUES (%s, %s, now())"
+    try:
+        g.conn.execute(cmd, (uid, artistid))
+    except:
+        print 'problem subscribing to artist'
+
+    return redirect(url_for('subscription', username=username))
+
+@app.route('/user/<username>/add_song_to_favorites/<songid>', methods=["POST"])
+def add_song_to_favorites(username, songid):
+    uid = get_user_uid()
+    cmd = "INSERT INTO song_favorites (uid, songid) VALUES (%s, %s)"
+    try:
+        g.conn.execute(cmd, (uid, songid))
+    except:
+        print 'problem adding song to favorites'
+
+    return redirect(url_for('favorites', username=username))
+
+@app.route('/user/<username>/delete_song_fav/<songid>', methods=["POST"])
+def delete_song_from_favorites(username, songid):
+    uid = get_user_uid()
+    cmd = "DELETE FROM song_favorites WHERE uid=%s and songid=%s"
+    try:
+        g.conn.execute(cmd, (uid, songid))
+    except:
+        print 'problem deleting song from favorites'
+
+    return redirect(url_for('favorites', username=username))
+
+@app.route('/user/<username>/add_album_to_favorites/<albumid>', methods=["POST"])
+def add_album_to_favorites(username, albumid):
+    uid = get_user_uid()
+    cmd = "INSERT INTO album_favorites (uid, albumid) VALUES (%s, %s)"
+    try:
+        g.conn.execute(cmd, (uid, albumid))
+    except:
+        print 'problem adding album to favorites'
+
+    return redirect(url_for('favorites', username=username))
+
+@app.route('/user/<username>/delete_album_fav/<albumid>', methods=["POST"])
+def delete_album_from_favorites(username, albumid):
+    uid = get_user_uid()
+    cmd = "DELETE FROM album_favorites WHERE uid=%s and albumid=%s"
+    try:
+        g.conn.execute(cmd, (uid, albumid))
+    except:
+        print 'problem deleting album from favorites'
+
+    return redirect(url_for('favorites', username=username))
+
+@app.route('/user/<username>/add_station_to_favorites/<authoruid>/<stationid>', methods=["POST"])
+def add_station_to_favorites(username, authoruid, stationid):
+    uid = get_user_uid()
+    cmd = "INSERT INTO station_favorites (uid, stationid, stationauthorid) VALUES (%s, %s, %s)"
+    try:
+        g.conn.execute(cmd, (uid, stationid, authoruid))
+    except:
+        print 'problem adding station to favorites'
+
+    return redirect(url_for('favorites', username=username))
+
+@app.route('/user/<username>/delete_station_fav/<authoruid>/<stationid>', methods=["POST"])
+def delete_station_from_favorites(username, authoruid, stationid):
+    uid = get_user_uid()
+    cmd = "DELETE FROM station_favorites WHERE uid=%s and stationid=%s and stationauthorid=%s"
+    try:
+        g.conn.execute(cmd, (uid, stationid, authoruid))
+    except:
+        print 'problem deleting station from favorites'
+
+    return redirect(url_for('favorites', username=username))
+
 
 def valid_login(username):
     cmd = 'SELECT uid FROM Users where name=:name1'
@@ -436,6 +573,28 @@ def get_songs_in_station(uid, stationid):
     cursor.close()
     return songs
 
+def get_friend_requests_sent():
+    username = session['username']
+    uid = get_user_uid()
+    cmd = "SELECT U.name FROM users AS U, friend AS F WHERE F.uid1=%s and F.isfriend=FALSE and U.uid=F.uid2"
+    friends = []
+    cursor = g.conn.execute(cmd, uid)
+    for result in cursor:
+        friends.append(result[0])
+    cursor.close()
+    return friends
+
+def get_friend_requests_received():
+    username = session['username']
+    uid = get_user_uid()
+    cmd = "SELECT U.name FROM users AS U, friend AS F WHERE F.uid2=%s and F.isfriend=FALSE and U.uid=F.uid1"
+    friends = []
+    cursor = g.conn.execute(cmd, uid)
+    for result in cursor:
+        friends.append(result[0])
+    cursor.close()
+    return friends
+
 
 def get_stations_for_user():
     username = session['username']
@@ -480,14 +639,34 @@ def get_song_favs_for_user():
     cursor = g.conn.execute(text(cmd), username1=username)
     user_song_favs = {}
     for result in cursor:
-        print result
         user_song_favs[result[0]] = [result[1], result[2], result[3], result[4]]
     cursor.close()
     return user_song_favs
 
+def get_album_favs_for_user():
+    username = session['username']
+    cmd = 'SELECT album_release.albumid, album_release.title, artist.stagename, album_release.genre FROM album_release, artist, album_favorites, Users WHERE Users.username=:username1 AND Users.uid=album_favorites.uid AND album_release.albumid=album_favorites.albumid AND artist.uid=album_release.uid'
+    cursor = g.conn.execute(text(cmd), username1=username)
+    user_album_favs = {}
+    for result in cursor:
+        user_album_favs[result[0]] = [result[1], result[2], result[3]]
+    cursor.close()
+    return user_album_favs
+
+def get_station_favs_for_user():
+    username = session['username']
+    cmd = 'SELECT create_station.stationid, create_station.name, U2.username, U2.uid FROM station_favorites, Users AS U1, Users AS U2, create_station WHERE U1.username=:username1 AND U1.uid=station_favorites.uid AND station_favorites.stationid=create_station.stationid AND station_favorites.stationauthorid=create_station.uid and U2.uid=create_station.uid'
+    cursor = g.conn.execute(text(cmd), username1=username)
+    user_station_favs = {}
+    for result in cursor:
+        user_station_favs[(result[3], result[0])] = [result[1], result[2]]
+    cursor.close()
+    return user_station_favs
+
+
 def get_friends():
     username = session['username']
-    cmd = 'SELECT friend.uid1, friend.uid2, friend.isfriend, Users1.name, Users2.name FROM friend, Users AS Users1, Users AS Users2 WHERE friend.uid1=Users1.uid AND friend.uid2=Users2.uid AND (Users1.username=:username1 OR Users2.username=:username1)'
+    cmd = 'SELECT friend.uid1, friend.uid2, friend.isfriend, Users1.username, Users2.username FROM friend, Users AS Users1, Users AS Users2 WHERE friend.uid1=Users1.uid AND friend.uid2=Users2.uid AND (Users1.username=:username1 OR Users2.username=:username1)'
     cursor = g.conn.execute(text(cmd), username1=username)
     friends = {}
     for result in cursor:
@@ -744,47 +923,9 @@ def signup():
 app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
 
 
-# import datetime
-# @app.template_filter()
-# def datetimefilter(value, format='%Y/%m/%d %H:%M'):
-#      """convert a datetime to a different format."""
-#      return value.strftime(format)
-
-# app.jinja_env.filters['datetimefilter'] = datetimefilter
-
-# @app.route("/template")
-# def template_test():
-#      return render_template('template.html', my_string="Wheeeee!", 
-#          my_list=[0,1,2,3,4,5], title="Index", current_time=datetime.datetime.now())
-
-# @app.route("/home")
-# def home():
-#     return redirect(url_for('profile', username=session['username']))
-#     #     my_list=[6,7,8,9,10,11], title="Home", current_time=datetime.datetime.now())
-#     return redirect(url_for('profile', username=session['username']))
-
-
-# @app.route("/about")
-# def about():
-#     return render_template('template.html', my_string="Bar", 
-#         my_list=[12,13,14,15,16,17], title="About", current_time=datetime.datetime.now())
-
 @app.route("/signout")
 def signout():
-    # return render_template('template.html', my_string="Foo", 
-    #     my_list=[6,7,8,9,10,11], title="Home", current_time=datetime.datetime.now())
     return redirect(url_for('logout'))
-
-# @app.route("/about")
-# def about():
-#     return render_template('template.html', my_string="Bar", 
-#         my_list=[12,13,14,15,16,17], title="About", current_time=datetime.datetime.now())
-
-# @app.route("/contact")
-# def contact():
-#     return render_template('template.html', my_string="FooBar"
-#         , my_list=[18,19,20,21,22,23], title="Contact Us", current_time=datetime.datetime.now())
-
 
 
 

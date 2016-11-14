@@ -19,40 +19,92 @@
 
 
 <body>
-  <h1>{{name}}'s Favorites and Subscriptions</h1>
+  <h1>{{name}}'s Favorites</h1>
 
 
-<table style="width:75%">
+<div style="float: left; width:40%; margin-right:20px">
+<p><b>Favorite Songs</b></p>
+<div class="table">
+<table >
   <tr>
-    <th>Artists</th>
-    <th>Songs</th>
-    <th>Albums</th>
-    <th>Stations</th>
+    <th></th>
+    <th>Name</th>
+    <th>Genre</th>
+    <th>Album</th>
+    <th>Artist</th>
+    <th></th>
   </tr>
-  <tr>
-    <td>
-      {% for n in artists %}
-      <div>{{n}}</div>
-      {% endfor %}
-    </td>
-    <td>
-      {% for n in songs %}
-      <div>"{{n}}"</div>
-      {% endfor %}
-    </td>
-    <td>
-      {% for n in albums %}
-      <div><i>{{n}}</i></div>
-      {% endfor %}
-    </td>
-    <td>
-      {% for n in stations %}
-      <div>"{{n}}"</div>
-      {% endfor %}
-    </td>
-    
-  </tr>
+  {% for key, value in songs.iteritems() %}
+    <tr>
+      <td><a href="{{ url_for('profile', username=name, song=key) }}">&#9658</a></td>
+    {% for n in value %}
+      <td>{{n}}</td>
+    {% endfor %}
+      <td>
+        <form method="POST" action="/user/{{name}}/delete_song_fav/{{key}}">
+          <input type="image" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTpleU6K18c3mJQxq8NI1bmRwpMZ5gtUgGZVWypV9Psc64ENr07" alt="Submit" width="15" height="15">
+        </form>
+      </td>
+    </tr>
+
+  {% endfor %}
 </table>
+</div>
+</div>
+
+
+<div style="float: left; width:30%; margin-right:20px">
+<p><b>Favorite Albums</b></p>
+<div class="table">
+<table >
+  <tr>
+    <th>Title</th>
+    <th>Artist</th>
+    <th>Genre</th>
+    <th></th>
+  </tr>
+  {% for key, value in albums.iteritems() %}
+    <tr>
+    {% for n in value %}
+      <td>{{n}}</td>
+    {% endfor %}
+      <td>
+        <form method="POST" action="/user/{{name}}/delete_album_fav/{{key}}">
+          <input type="image" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTpleU6K18c3mJQxq8NI1bmRwpMZ5gtUgGZVWypV9Psc64ENr07" alt="Submit" width="15" height="15">
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+</table>
+</div>
+</div>
+
+
+<div style="float: left; width:20%; margin-right:20px">
+<p><b>Favorite Stations</b></p>
+<div class="table">
+<table >
+  <tr>
+    <th>Name</th>
+    <th>Author</th>
+    <th></th>
+  </tr>
+  {% for key, value in stations.iteritems() %}
+    <tr>
+      {% for n in value %}
+        <td>{{n}}</td>
+      {% endfor %}
+      <td>
+        <form method="POST" action="/user/{{name}}/delete_station_fav/{{key[0]}}/{{key[1]}}">
+          <input type="image" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTpleU6K18c3mJQxq8NI1bmRwpMZ5gtUgGZVWypV9Psc64ENr07" alt="Submit" width="15" height="15">
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+</table>
+</div>
+</div>
+
 
 <br>
 <br>

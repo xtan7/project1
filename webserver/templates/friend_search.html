@@ -40,7 +40,7 @@
   </tr>
   {% for key, value in results.iteritems() %}
     <tr>
-     <td><form action="/user/{{name}}/friends">
+     <td><form method="POST" action="/user/{{name}}/add_friend/{{key}}">
         <input type="image" src="http://img.freepik.com/free-icon/add-interface-circular-symbol-with-plus-sign_318-67290.jpg?size=338&ext=jpg" alt="Submit" width="10" height="10">  {{key}}
       </form>
      </td>

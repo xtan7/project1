@@ -22,7 +22,8 @@
 <p>Search for new friends: <input type="search" name="query" required="required"> <input type="submit" value="Search by Username"></p>
 </form>
 
-<p><b>Current Friends:</b></p>
+<div style="float: left; width:20%; margin-right:20px">
+  <p><b>Current Friends:</b></p>
 <div class="table">
 <table>
   <tr>
@@ -31,15 +32,55 @@
   </tr>
   {% for key, value in friends.iteritems() %}
     <tr>
-     <td>{{value[0]}}</td>
      {% if value[1] == True %}
+     <td>{{value[0]}}</td>
        <td><img src="http://www.freeiconspng.com/uploads/heart-icon-14.png" alt="friend" style="width:15px;height:15px;"></td>
-     {% else %}
-       <td><img src="http://www.freeiconspng.com/uploads/heart-outline-19.png" alt="not friend" style="width:15px:height:15px;"></td>
      {% endif %}
     </tr>
   {% endfor %}
 </table>
+</div>
+</div>
+
+<div style="float: left; width:20%; margin-right:20px">
+  <p><b>Pending Requests:</b></p>
+<div class="table">
+<table>
+  <tr>
+    <th>Name</th>
+    <th></th>
+  </tr>
+  {% for n in friend_requests_sent %}
+    <tr>
+        <td>{{n}}</td>
+       <td><img src="http://www.freeiconspng.com/uploads/heart-outline-19.png" alt="not friend" style="width:15px;height:15px;"></td>
+    </tr>
+  {% endfor %}
+</table>
+</div>
+</div>
+
+<div style="float: left; width:20%; margin-right:20px">
+  <p><b>Requests Received:</b></p>
+<div class="table">
+<table>
+  <tr>
+    <th>Name</th>
+    <th></th>
+  </tr>
+  {% for n in friend_requests_received %}
+    <tr>
+        <td>{{n}}</td>
+       <td>
+        <form method="POST" action="/user/{{name}}/accept_request/{{n}}">
+        <input type="image" src="http://www.iconsdb.com/icons/preview/guacamole-green/checkmark-xxl.png" alt="Submit" width="15" height="15">
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+</table>
+</div>
+</div>
 
 
 
