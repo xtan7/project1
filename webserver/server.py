@@ -516,7 +516,7 @@ def delete_station_from_favorites(username, authoruid, stationid):
 
 
 def valid_login(username):
-    cmd = 'SELECT uid FROM Users where name=:name1'
+    cmd = 'SELECT uid FROM Users where username=:name1'
     cursor = g.conn.execute(text(cmd), name1=username)
     for result in cursor:
         print result
@@ -576,22 +576,22 @@ def get_songs_in_station(uid, stationid):
 def get_friend_requests_sent():
     username = session['username']
     uid = get_user_uid()
-    cmd = "SELECT U.name FROM users AS U, friend AS F WHERE F.uid1=%s and F.isfriend=FALSE and U.uid=F.uid2"
-    friends = []
+    cmd = "SELECT U.uid, U.username, U.name FROM users AS U, friend AS F WHERE F.uid1=%s and F.isfriend=FALSE and U.uid=F.uid2"
+    friends = {}
     cursor = g.conn.execute(cmd, uid)
     for result in cursor:
-        friends.append(result[0])
+        friends[result[0]] = [result[1], result[2]]
     cursor.close()
     return friends
 
 def get_friend_requests_received():
     username = session['username']
     uid = get_user_uid()
-    cmd = "SELECT U.name FROM users AS U, friend AS F WHERE F.uid2=%s and F.isfriend=FALSE and U.uid=F.uid1"
-    friends = []
+    cmd = "SELECT U.uid, U.username, U.name FROM users AS U, friend AS F WHERE F.uid2=%s and F.isfriend=FALSE and U.uid=F.uid1"
+    friends = {}
     cursor = g.conn.execute(cmd, uid)
     for result in cursor:
-        friends.append(result[0])
+        friends[result[0]] = [result[1], result[2]]
     cursor.close()
     return friends
 
@@ -666,15 +666,15 @@ def get_station_favs_for_user():
 
 def get_friends():
     username = session['username']
-    cmd = 'SELECT friend.uid1, friend.uid2, friend.isfriend, Users1.username, Users2.username FROM friend, Users AS Users1, Users AS Users2 WHERE friend.uid1=Users1.uid AND friend.uid2=Users2.uid AND (Users1.username=:username1 OR Users2.username=:username1)'
+    cmd = 'SELECT friend.uid1, friend.uid2, friend.isfriend, Users1.username, Users2.username, Users1.name, Users2.name FROM friend, Users AS Users1, Users AS Users2 WHERE friend.uid1=Users1.uid AND friend.uid2=Users2.uid AND (Users1.username=:username1 OR Users2.username=:username1)'
     cursor = g.conn.execute(text(cmd), username1=username)
     friends = {}
     for result in cursor:
         print result
         if result[3]==username:
-            friends[result[1]] = [result[4], result[2]]
+            friends[result[1]] = [result[4], result[2], result[6]]
         else: 
-            friends[result[0]] = [result[3], result[2]]
+            friends[result[0]] = [result[3], result[2], result[5]]
     cursor.close()
     return friends
 

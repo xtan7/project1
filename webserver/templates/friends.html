@@ -27,13 +27,13 @@
 <div class="table">
 <table>
   <tr>
-    <th>Name</th>
+    <th>Username</th>
     <th></th>
   </tr>
   {% for key, value in friends.iteritems() %}
     <tr>
      {% if value[1] == True %}
-     <td>{{value[0]}}</td>
+     <td>{{value[0]}} ({{value[2]}})</td>
        <td><img src="http://www.freeiconspng.com/uploads/heart-icon-14.png" alt="friend" style="width:15px;height:15px;"></td>
      {% endif %}
     </tr>
@@ -47,12 +47,12 @@
 <div class="table">
 <table>
   <tr>
-    <th>Name</th>
+    <th>Username</th>
     <th></th>
   </tr>
-  {% for n in friend_requests_sent %}
+  {% for k,v in friend_requests_sent.iteritems() %}
     <tr>
-        <td>{{n}}</td>
+        <td>{{v[0]}} ({{v[1]}})</td>
        <td><img src="http://www.freeiconspng.com/uploads/heart-outline-19.png" alt="not friend" style="width:15px;height:15px;"></td>
     </tr>
   {% endfor %}
@@ -65,14 +65,14 @@
 <div class="table">
 <table>
   <tr>
-    <th>Name</th>
+    <th>Username</th>
     <th></th>
   </tr>
-  {% for n in friend_requests_received %}
+  {% for k,v in friend_requests_received.iteritems() %}
     <tr>
-        <td>{{n}}</td>
+        <td>{{v[0]}} ({{v[1]}})</td>
        <td>
-        <form method="POST" action="/user/{{name}}/accept_request/{{n}}">
+        <form method="POST" action="/user/{{name}}/accept_request/{{v[0]}}">
         <input type="image" src="http://www.iconsdb.com/icons/preview/guacamole-green/checkmark-xxl.png" alt="Submit" width="15" height="15">
         </form>
       </td>
